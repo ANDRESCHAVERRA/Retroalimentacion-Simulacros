@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retroalimentación de Simulacros</title>
-    <!-- Usamos Bootstrap para un diseño rápido y bonito -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -16,6 +15,10 @@
         .table th { background-color: #34495e; color: white; }
         .badge-acierto { background-color: #198754; }
         .badge-error { background-color: #dc3545; }
+        /* Estilos para el autocompletado */
+        .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; background-color: #fff; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4d4d4; }
+        .autocomplete-items div:hover { background-color: #e9ecef; }
     </style>
 </head>
 <body>
@@ -23,17 +26,14 @@
         <div class="card">
             <div class="card-header text-center">
                 <h3>📊 Consulta tu Retroalimentación</h3>
-                <p class="mb-0">Ingresa tu nombre para ver tus resultados y recomendaciones.</p>
+                <p class="mb-0">Escribe tu nombre para buscar tus resultados.</p>
             </div>
             <div class="card-body p-4">
                 <div class="row justify-content-center mb-4">
-                    <div class="col-md-8">
-                        <label for="nombreEstudiante" class="form-label fw-bold">Nombre del estudiante (ej: Ana_Perez):</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="nombreEstudiante" placeholder="Escribe tu nombre aquí...">
-                            <button class="btn btn-primary" onclick="cargarDatos()">Consultar</button>
-                        </div>
-                        <div class="form-text">Asegúrate de escribirlo exactamente como te registraste.</div>
+                    <div class="col-md-8 position-relative">
+                        <label for="nombreEstudiante" class="form-label fw-bold">Buscar estudiante:</label>
+                        <input type="text" class="form-control form-control-lg" id="nombreEstudiante" placeholder="Escribe tu nombre..." autocomplete="off">
+                        <div id="autocomplete-list" class="autocomplete-items"></div>
                     </div>
                 </div>
 
@@ -45,97 +45,149 @@
     </div>
 
     <script>
-        // ⚠️ IMPORTANTE: Aquí irá la URL del Apps Script (Paso 5). Por ahora no funcionará.
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFHoiW-MvgNcAvG9ltNhSQpiDQm1WdK3-qA97NQ8sa4KP8YCc1kYMliVosUEywT_n_/exec";
+        let listaNombres = [];
 
-        async function cargarDatos() {
-            const nombre = document.getElementById('nombreEstudiante').value.trim();
-            const resultadoDiv = document.getElementById('resultado');
+        // 1. Cargar la lista de nombres al abrir la página
+        function cargarListaNombres() {
+            const callbackName = 'jsonp_lista_' + Math.round(100000 * Math.random());
+            window[callbackName] = function(data) {
+                document.body.removeChild(script);
+                delete window[callbackName];
+                if (Array.isArray(data)) {
+                    listaNombres = data;
+                }
+            };
+            const script = document.createElement('script');
+            script.src = `${APPS_SCRIPT_URL}?accion=lista&callback=${callbackName}`;
+            document.body.appendChild(script);
+        }
+
+        // 2. Lógica del autocompletado
+        const input = document.getElementById("nombreEstudiante");
+        const list = document.getElementById("autocomplete-list");
+
+        input.addEventListener("input", function() {
+            const val = this.value;
+            closeAllLists();
+            if (!val) { return false; }
             
-            if (!nombre) {
-                resultadoDiv.innerHTML = '<div class="alert alert-warning">Por favor, ingresa tu nombre.</div>';
+            // Filtrar nombres que empiecen con las letras escritas
+            const coincidencias = listaNombres.filter(nombre => 
+                nombre.toLowerCase().startsWith(val.toLowerCase())
+            );
+
+            if (coincidencias.length === 0) {
+                list.innerHTML = '<div class="text-muted p-2">No se encontraron nombres</div>';
                 return;
             }
 
-            resultadoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Buscando tus datos...</p></div>';
+            coincidencias.forEach(nombre => {
+                const item = document.createElement("div");
+                // Resaltar la parte que coincide
+                item.innerHTML = "<strong>" + nombre.substr(0, val.length) + "</strong>" + nombre.substr(val.length);
+                item.addEventListener("click", function() {
+                    input.value = nombre;
+                    closeAllLists();
+                    cargarDatos(nombre); // Cargar datos automáticamente
+                });
+                list.appendChild(item);
+            });
+        });
 
-            // Creamos un nombre único para la función callback
-            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+        function closeAllLists() {
+            list.innerHTML = "";
+        }
 
-            // Definimos la función que Apps Script llamará
+        // Cerrar la lista si se hace clic fuera
+        document.addEventListener("click", function (e) {
+            if (e.target !== input) {
+                closeAllLists();
+            }
+        });
+
+        // 3. Cargar los datos del estudiante seleccionado
+        function cargarDatos(nombre) {
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando resultados...</p></div>';
+
+            const callbackName = 'jsonp_datos_' + Math.round(100000 * Math.random());
+
             window[callbackName] = function(data) {
-                // Eliminamos el script de la página una vez recibido
                 document.body.removeChild(script);
                 delete window[callbackName];
 
-                // Si hay un error en los datos
-                if (data.error) {
+                if (typeof data === 'object' && data.error) {
                     resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${data.error}</div>`;
                     return;
                 }
 
-                // La primera fila son los encabezados, el resto son los datos
-                const cabecera = data[0];
-                const filas = data.slice(1);
+                try {
+                    const filas = data.trim().split('\n').map(fila => {
+                        return fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || fila.split(',');
+                    });
+                    const datosLimpios = filas.map(f => f.map(c => c.replace(/^"|"$/g, '')));
+                    const filasDatos = datosLimpios.slice(1);
 
-                // Contamos los aciertos (buscando 'True' en la columna 9)
-                let aciertos = 0;
-                filas.forEach(fila => {
-                    if (fila[9] && fila[9].toLowerCase().includes('true')) aciertos++;
-                });
-                const porcentaje = ((aciertos / filas.length) * 100).toFixed(1);
+                    let aciertos = 0;
+                    filasDatos.forEach(fila => {
+                        if (fila[9] && fila[9].toLowerCase().includes('true')) aciertos++;
+                    });
+                    const porcentaje = ((aciertos / filasDatos.length) * 100).toFixed(1);
 
-                // Construimos la tabla HTML
-                let html = `
-                    <div class="alert alert-info text-center">
-                        <h5>Resultado General: ${aciertos} de ${filas.length} aciertos (${porcentaje}%)</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Área</th>
-                                    <th>Tip</th>
-                                    <th>Respuesta</th>
-                                    <th>Correcta</th>
-                                    <th>¿Acertó?</th>
-                                    <th>Estrategia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                filas.forEach(fila => {
-                    const acerto = fila[9] && fila[9].toLowerCase().includes('true');
-                    const clase = acerto ? 'table-success' : 'table-danger';
-                    const badge = acerto ? '<span class="badge badge-acierto">Sí</span>' : '<span class="badge badge-error">No</span>';
-                    
-                    html += `
-                        <tr class="${clase}">
-                            <td>${fila[0]}</td>
-                            <td>${fila[2]}</td>
-                            <td>${fila[5]}</td>
-                            <td>${fila[8]}</td>
-                            <td>${fila[1]}</td>
-                            <td>${badge}</td>
-                            <td><small>${fila[7]}</small></td>
-                        </tr>
+                    let html = `
+                        <div class="alert alert-info text-center">
+                            <h5>Resultado General: ${aciertos} de ${filasDatos.length} aciertos (${porcentaje}%)</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Área</th>
+                                        <th>Tip</th>
+                                        <th>Respuesta</th>
+                                        <th>Correcta</th>
+                                        <th>¿Acertó?</th>
+                                        <th>Estrategia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
-                });
 
-                html += '</tbody></table></div>';
-                resultadoDiv.innerHTML = html;
+                    filasDatos.forEach(fila => {
+                        const acerto = fila[9] && fila[9].toLowerCase().includes('true');
+                        const clase = acerto ? 'table-success' : 'table-danger';
+                        const badge = acerto ? '<span class="badge badge-acierto">Sí</span>' : '<span class="badge badge-error">No</span>';
+                        
+                        html += `
+                            <tr class="${clase}">
+                                <td>${fila[0] || ''}</td>
+                                <td>${fila[2] || ''}</td>
+                                <td>${fila[5] || ''}</td>
+                                <td>${fila[8] || ''}</td>
+                                <td>${fila[1] || ''}</td>
+                                <td>${badge}</td>
+                                <td><small>${fila[7] || ''}</small></td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table></div>';
+                    resultadoDiv.innerHTML = html;
+
+                } catch (e) {
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">Error procesando los datos: ${e.message}</div>`;
+                }
             };
 
-            // Creamos la etiqueta <script> para hacer la petición JSONP
             const script = document.createElement('script');
-            // IMPORTANTE: Asegúrate de que la URL sea la correcta
-            const url = `https://script.google.com/macros/s/AKfycbwFHoiW-MvgNcAvG9ltNhSQpiDQm1WdK3-qA97NQ8sa4KP8YCc1kYMliVosUEywT_n_/exec?estudiante=${encodeURIComponent(nombre)}&callback=${callbackName}`;
-            
-            script.src = url;
+            script.src = `${APPS_SCRIPT_URL}?accion=datos&estudiante=${encodeURIComponent(nombre)}&callback=${callbackName}`;
             document.body.appendChild(script);
         }
+
+        // Iniciar la carga de nombres al abrir la página
+        window.onload = cargarListaNombres;
     </script>
 </body>
 </html>
