@@ -16,9 +16,10 @@
         .table-danger { background-color: #f8d7da !important; }
         .table th { background-color: #34495e; color: white; position: sticky; top: 0; }
         .table-responsive { max-height: 50vh; overflow-y: auto; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .score-box { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
-        .score-box h2 { font-size: 2.5rem; margin: 0; font-weight: bold; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .score-box { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .score-box h2 { font-size: 3.5rem; margin: 0; font-weight: bold; }
+        .score-box small { font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -32,27 +33,19 @@
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">1. Semestre</label>
-                        <select class="form-select" id="selectSemestre" onchange="cargarGrupos()">
-                            <option value="">Cargando semestres...</option>
-                        </select>
+                        <select class="form-select" id="selectSemestre" onchange="cargarGrupos()"><option value="">Cargando...</option></select>
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">2. Grupo</label>
-                        <select class="form-select" id="selectGrupo" onchange="cargarEstudiantes()" disabled>
-                            <option value="">Selecciona un semestre</option>
-                        </select>
+                        <select class="form-select" id="selectGrupo" onchange="cargarEstudiantes()" disabled><option value="">Selecciona semestre</option></select>
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">3. Estudiante</label>
-                        <select class="form-select" id="selectEstudiante" onchange="cargarSimulacros()" disabled>
-                            <option value="">Selecciona un grupo</option>
-                        </select>
+                        <select class="form-select" id="selectEstudiante" onchange="cargarSimulacros()" disabled><option value="">Selecciona grupo</option></select>
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">4. Simulacro</label>
-                        <select class="form-select" id="selectSimulacro" disabled>
-                            <option value="">Selecciona un estudiante</option>
-                        </select>
+                        <select class="form-select" id="selectSimulacro" disabled><option value="">Selecciona estudiante</option></select>
                     </div>
                 </div>
                 <div class="text-center mt-3">
@@ -68,42 +61,34 @@
                 <button class="btn btn-outline-secondary btn-sm" onclick="volver()">← Volver al inicio</button>
             </div>
 
-            <!-- Fila de Gráficos y Puntajes -->
             <div class="row mb-3">
-                <!-- Gráfico de Evolución Histórica -->
-                <div class="col-md-7">
+                <!-- Gráfico de Evolución con la Predicción -->
+                <div class="col-md-8">
                     <div class="card h-100 mb-0">
-                        <div class="card-header fw-bold">📈 Evolución Histórica (Todos los Simulacros)</div>
+                        <div class="card-header fw-bold">📈 Evolución y Predicción</div>
                         <div class="card-body">
                             <div class="chart-container"><canvas id="graficoEvolucion"></canvas></div>
                         </div>
                     </div>
                 </div>
-                <!-- Tarjetas de Puntajes -->
-                <div class="col-md-5">
+                <!-- Tarjeta de Nota Predicha y Aciertos -->
+                <div class="col-md-4">
                     <div class="card h-100 mb-0">
-                        <div class="card-header fw-bold">Puntajes Finales</div>
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <div class="score-box" style="background-color: #0d6efd;">
-                                        <small>Nota Real</small>
-                                        <h2 id="notaReal">0</h2>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="score-box" style="background-color: #6c757d;">
-                                        <small>Predicción ML</small>
-                                        <h2 id="notaPredicha">?</h2>
-                                    </div>
-                                </div>
+                        <div class="card-header fw-bold">Resumen y Predicción</div>
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                            
+                            <div class="score-box w-100 mb-4" style="background-color: #0d6efd;">
+                                <small>Nota Final Predicha</small>
+                                <h2 id="notaPredicha">--</h2>
+                                <span style="font-size: 0.8rem;">Basado en Machine Learning</span>
                             </div>
-                            <hr>
-                            <div class="text-center mt-2">
-                                <h5>Aciertos en este Simulacro</h5>
-                                <p id="aciertosGlobal" class="lead text-muted">0 de 0</p>
-                                <h3 id="porcentajeGlobal" class="text-success fw-bold">0%</h3>
+                            
+                            <div class="text-center w-100 border-top pt-3">
+                                <h5>Aciertos en Simulacro {sim}</h5>
+                                <p id="aciertosGlobal" class="lead text-muted mb-1">0 de 0</p>
+                                <h3 id="porcentajeGlobal" class="text-success fw-bold mb-0">0%</h3>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -128,15 +113,7 @@
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle mb-0" id="tablaResultados">
                             <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Área</th>
-                                    <th>Nivel</th>
-                                    <th>Respuesta</th>
-                                    <th>Correcta</th>
-                                    <th>¿Acertó?</th>
-                                    <th>Solucionario</th>
-                                </tr>
+                                <tr><th>#</th><th>Área</th><th>Nivel</th><th>Respuesta</th><th>Correcta</th><th>¿Acertó?</th><th>Solucionario</th></tr>
                             </thead>
                             <tbody></tbody>
                         </table>
@@ -147,12 +124,10 @@
     </div>
 
     <script>
-        // URL de tu Google Apps Script
         const API_URL = "https://script.google.com/macros/s/AKfycbzOoEEx8eXsnbW-lUros3DhpF4ZkAxM93WAf5HdMjbXsDinZ28FLks8q4cha7-TGyjy/exec";
         let chartAreas = null;
         let chartEvolucion = null;
 
-        // 1. Cargar Semestres al iniciar
         window.onload = async () => {
             const select = document.getElementById('selectSemestre');
             try {
@@ -160,168 +135,106 @@
                 const semestres = await res.json();
                 select.innerHTML = '<option value="">Selecciona un semestre</option>';
                 semestres.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
-            } catch (e) { 
-                select.innerHTML = '<option value="">Error al cargar</option>'; 
-            }
+            } catch (e) { select.innerHTML = '<option value="">Error</option>'; }
         };
 
-        // 2. Cargar Grupos
         async function cargarGrupos() {
             const semestre = document.getElementById('selectSemestre').value;
             const selectGrupo = document.getElementById('selectGrupo');
             const selectEst = document.getElementById('selectEstudiante');
             const selectSim = document.getElementById('selectSimulacro');
-            
-            // Limpiar dependencias
-            selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; 
-            selectEst.disabled = true;
-            selectSim.innerHTML = '<option value="">Selecciona un estudiante</option>'; 
-            selectSim.disabled = true;
-
-            if (!semestre) { 
-                selectGrupo.innerHTML = '<option value="">Selecciona un semestre</option>'; 
-                selectGrupo.disabled = true; 
-                return; 
-            }
-            
-            selectGrupo.innerHTML = '<option value="">Cargando...</option>'; 
-            selectGrupo.disabled = false;
-            
+            selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; selectEst.disabled = true;
+            selectSim.innerHTML = '<option value="">Selecciona estudiante</option>'; selectSim.disabled = true;
+            if (!semestre) { selectGrupo.innerHTML = '<option value="">Selecciona semestre</option>'; selectGrupo.disabled = true; return; }
+            selectGrupo.innerHTML = '<option value="">Cargando...</option>'; selectGrupo.disabled = false;
             try {
                 const res = await fetch(`${API_URL}?action=grupos&semestre=${encodeURIComponent(semestre)}`);
                 const grupos = await res.json();
                 selectGrupo.innerHTML = '<option value="">Selecciona un grupo</option>';
                 grupos.forEach(g => selectGrupo.innerHTML += `<option value="${g}">${g}</option>`);
-            } catch (e) { 
-                selectGrupo.innerHTML = '<option value="">Error</option>'; 
-            }
+            } catch (e) { selectGrupo.innerHTML = '<option value="">Error</option>'; }
         }
 
-        // 3. Cargar Estudiantes
         async function cargarEstudiantes() {
             const semestre = document.getElementById('selectSemestre').value;
             const grupo = document.getElementById('selectGrupo').value;
             const selectEst = document.getElementById('selectEstudiante');
             const selectSim = document.getElementById('selectSimulacro');
-
-            // Limpiar dependencia
-            selectSim.innerHTML = '<option value="">Selecciona un estudiante</option>'; 
-            selectSim.disabled = true;
-
-            if (!grupo) { 
-                selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; 
-                selectEst.disabled = true; 
-                return; 
-            }
-            
-            selectEst.innerHTML = '<option value="">Cargando...</option>'; 
-            selectEst.disabled = false;
-            
+            selectSim.innerHTML = '<option value="">Selecciona estudiante</option>'; selectSim.disabled = true;
+            if (!grupo) { selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; selectEst.disabled = true; return; }
+            selectEst.innerHTML = '<option value="">Cargando...</option>'; selectEst.disabled = false;
             try {
                 const res = await fetch(`${API_URL}?action=estudiantes&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}`);
                 const estudiantes = await res.json();
                 selectEst.innerHTML = '<option value="">Selecciona un estudiante</option>';
                 estudiantes.sort().forEach(e => selectEst.innerHTML += `<option value="${e}">${e}</option>`);
-            } catch (e) { 
-                selectEst.innerHTML = '<option value="">Error</option>'; 
-            }
+            } catch (e) { selectEst.innerHTML = '<option value="">Error</option>'; }
         }
 
-        // 4. Cargar Simulacros disponibles
         async function cargarSimulacros() {
             const semestre = document.getElementById('selectSemestre').value;
             const grupo = document.getElementById('selectGrupo').value;
             const estudiante = document.getElementById('selectEstudiante').value;
             const selectSim = document.getElementById('selectSimulacro');
-
-            if (!estudiante) { 
-                selectSim.innerHTML = '<option value="">Selecciona un estudiante</option>'; 
-                selectSim.disabled = true; 
-                return; 
-            }
-            
-            selectSim.innerHTML = '<option value="">Cargando...</option>'; 
-            selectSim.disabled = false;
-            
+            if (!estudiante) { selectSim.innerHTML = '<option value="">Selecciona estudiante</option>'; selectSim.disabled = true; return; }
+            selectSim.innerHTML = '<option value="">Cargando...</option>'; selectSim.disabled = false;
             try {
                 const res = await fetch(`${API_URL}?action=simulacros&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}&estudiante=${encodeURIComponent(estudiante)}`);
                 const simulacros = await res.json();
                 selectSim.innerHTML = '<option value="">Selecciona un simulacro</option>';
                 simulacros.forEach(s => selectSim.innerHTML += `<option value="${s}">Simulacro ${s}</option>`);
-            } catch (e) { 
-                selectSim.innerHTML = '<option value="">Error</option>'; 
-            }
+            } catch (e) { selectSim.innerHTML = '<option value="">Error</option>'; }
         }
 
-        // 5. Consultar Datos
         async function consultarDatos() {
             const semestre = document.getElementById('selectSemestre').value;
             const grupo = document.getElementById('selectGrupo').value;
             const estudiante = document.getElementById('selectEstudiante').value;
             const simulacro = document.getElementById('selectSimulacro').value;
 
-            if (!semestre || !grupo || !estudiante || !simulacro) { 
-                alert("Por favor, selecciona todas las opciones, incluyendo el simulacro."); 
-                return; 
-            }
+            if (!semestre || !grupo || !estudiante || !simulacro) { alert("Selecciona todas las opciones."); return; }
 
             document.getElementById('seccion-seleccion').style.display = 'none';
             document.getElementById('seccion-resultados').style.display = 'block';
-            document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante} (Simulacro ${simulacro})`;
+            document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
+            
+            // Actualizar el texto del simulacro en la tarjeta
+            document.querySelector('.border-top h5').innerText = `Aciertos en Simulacro ${simulacro}`;
             
             try {
                 const res = await fetch(`${API_URL}?action=datos&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}&estudiante=${encodeURIComponent(estudiante)}&simulacro=${simulacro}`);
                 const json = await res.json();
 
-                if (json.error) { 
-                    alert(json.error); 
-                    volver(); 
-                    return; 
-                }
+                if (json.error) { alert(json.error); volver(); return; }
 
-                // Procesar tabla y gráfico de áreas
                 Papa.parse(json.retroalimentacion_csv, {
                     header: true, skipEmptyLines: true,
-                    complete: function(results) {
-                        procesarRetroalimentacion(results.data);
-                    }
+                    complete: function(results) { procesarRetroalimentacion(results.data); }
                 });
 
-                // Procesar notas finales y gráfico de evolución
-                procesarNotas(json.notas_simulacros, json.score_final, json.prediccion);
+                procesarNotas(json.notas_simulacros, json.prediccion);
 
-            } catch (e) { 
-                alert("Error al conectar con la base de datos"); 
-                console.error(e); 
-                volver(); 
-            }
+            } catch (e) { alert("Error al conectar"); console.error(e); volver(); }
         }
 
-        // 6. Llenar Tabla y Gráfico de Áreas
         function procesarRetroalimentacion(datos) {
-            let aciertos = 0; 
-            let areasStats = {};
-            const tbody = document.querySelector('#tablaResultados tbody'); 
-            tbody.innerHTML = '';
+            let aciertos = 0; let areasStats = {};
+            const tbody = document.querySelector('#tablaResultados tbody'); tbody.innerHTML = '';
 
             datos.forEach(fila => {
                 const area = fila['Área'] || 'Desconocida';
                 const acerto = fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true');
-                
                 if (acerto) aciertos++;
                 
                 if (!areasStats[area]) areasStats[area] = { total: 0, aciertos: 0 };
-                areasStats[area].total++; 
-                if (acerto) areasStats[area].aciertos++;
+                areasStats[area].total++; if (acerto) areasStats[area].aciertos++;
 
                 const clase = acerto ? 'table-success' : 'table-danger';
                 const badge = acerto ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>';
-                
                 tbody.innerHTML += `
                     <tr class="${clase}">
                         <td class="fw-bold text-center">${fila['# Pregunta'] || ''}</td>
-                        <td>${area}</td>
-                        <td>${fila['Nivel'] || ''}</td>
+                        <td>${area}</td><td>${fila['Nivel'] || ''}</td>
                         <td class="fw-bold">${fila['Respuesta del estudiante'] || ''}</td>
                         <td class="fw-bold">${fila['Opción Correcta'] || ''}</td>
                         <td class="text-center">${badge}</td>
@@ -336,9 +249,8 @@
             generarGraficoAreas(areasStats);
         }
 
-        // 7. Llenar Tarjetas y Gráfico de Evolución
-        function procesarNotas(notasSimulacros, scoreFinal, prediccion) {
-            document.getElementById('notaReal').innerText = scoreFinal !== "N/A" ? scoreFinal : "N/A";
+        function procesarNotas(notasSimulacros, prediccion) {
+            // Mostrar la nota predicha en la tarjeta
             document.getElementById('notaPredicha').innerText = prediccion !== "N/A" ? prediccion : "Pendiente";
 
             const labels = [];
@@ -350,6 +262,7 @@
                 return numA - numB;
             });
 
+            // Agregar las notas de los simulacros presentados
             keys.forEach(key => {
                 if (notasSimulacros[key] && notasSimulacros[key] !== "") {
                     labels.push(key.replace("SIMULACRO_", "Sim "));
@@ -357,14 +270,18 @@
                 }
             });
 
-            generarGraficoEvolucion(labels, dataNotas);
+            // Si hay una predicción, la agregamos al final del gráfico como un punto extra
+            if (prediccion !== "N/A" && prediccion !== "" && !isNaN(prediccion)) {
+                labels.push("Predicción ML");
+                dataNotas.push(parseFloat(prediccion));
+            }
+
+            generarGraficoEvolucion(labels, dataNotas, prediccion !== "N/A");
         }
 
-        // 8. Gráfico de Barras Apiladas (Áreas)
         function generarGraficoAreas(stats) {
             const ctx = document.getElementById('graficoAreas').getContext('2d');
             if (chartAreas) chartAreas.destroy();
-
             const labels = Object.keys(stats);
             const dataAciertos = labels.map(l => stats[l].aciertos);
             const dataErrores = labels.map(l => stats[l].total - stats[l].aciertos);
@@ -378,46 +295,57 @@
                         { label: 'Errores', data: dataErrores, backgroundColor: '#dc3545', borderRadius: 4 }
                     ]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
             });
         }
 
-        // 9. Gráfico de Líneas (Evolución)
-        function generarGraficoEvolucion(labels, dataNotas) {
+        function generarGraficoEvolucion(labels, dataNotas, tienePrediccion) {
             const ctx = document.getElementById('graficoEvolucion').getContext('2d');
             if (chartEvolucion) chartEvolucion.destroy();
+
+            // Creamos un arreglo de colores para los puntos. 
+            // Todos son azules, excepto el último (si es predicción) que será naranja/dorado.
+            const pointColors = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tienePrediccion) ? '#fd7e14' : '#0d6efd');
+            const pointSizes = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tienePrediccion) ? 8 : 5);
 
             chartEvolucion = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Nota del Simulacro',
+                        label: 'Nota',
                         data: dataNotas,
                         borderColor: '#0d6efd',
-                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
                         borderWidth: 3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#0d6efd',
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: pointColors,
                         pointBorderWidth: 2,
-                        pointRadius: 5,
+                        pointRadius: pointSizes,
                         fill: true,
                         tension: 0.3
                     }]
                 },
                 options: {
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: false, suggestedMin: 0, suggestedMax: 100 } }
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: false, suggestedMin: 0, suggestedMax: 100 } },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) label += context.parsed.y + ' pts';
+                                    if (context.dataIndex === dataNotas.length - 1 && tienePrediccion) label += ' (Predicción)';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
 
-        // 10. Volver al inicio
         function volver() {
             document.getElementById('seccion-resultados').style.display = 'none';
             document.getElementById('seccion-seleccion').style.display = 'block';
