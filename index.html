@@ -3,158 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retroalimentación de Simulacros</title>
+    <title>Portal de Retroalimentación</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .container { max-width: 1300px; margin-top: 30px; } /* Un poco más ancho para que quepa todo */
-        .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; }
-        .card-header { background-color: #2c3e50; color: white; border-radius: 12px 12px 0 0 !important; padding: 20px; }
+        .container { max-width: 1200px; margin-top: 30px; }
+        .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; margin-bottom: 20px; }
+        .card-header { background-color: #2c3e50; color: white; border-radius: 12px 12px 0 0 !important; padding: 15px 20px;}
         .table-success { background-color: #d1e7dd !important; }
         .table-danger { background-color: #f8d7da !important; }
         .table th { background-color: #34495e; color: white; position: sticky; top: 0; }
-        .badge-acierto { background-color: #198754; }
-        .badge-error { background-color: #dc3545; }
-        .table-responsive { max-height: 75vh; overflow-y: auto; }
-        /* Hacer la tabla un poco más compacta */
-        .table td, .table th { font-size: 0.9rem; padding: 8px; }
+        .table-responsive { max-height: 60vh; overflow-y: auto; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card">
+        <!-- SECCIÓN DE SELECCIÓN -->
+        <div class="card" id="seccion-seleccion">
             <div class="card-header text-center">
-                <h3>📊 Consulta tu Retroalimentación</h3>
-                <p class="mb-0">Escribe tu nombre para ver tus resultados.</p>
+                <h3 class="mb-0">🎓 Portal de Retroalimentación</h3>
             </div>
             <div class="card-body p-4">
-                <div class="row justify-content-center mb-4">
-                    <div class="col-md-8">
-                        <label for="nombreEstudiante" class="form-label fw-bold">Nombre del estudiante:</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="nombreEstudiante" list="lista-estudiantes" placeholder="Escribe tu nombre aquí...">
-                            <datalist id="lista-estudiantes"></datalist>
-                            <button class="btn btn-primary" onclick="cargarDatos()">Consultar</button>
-                        </div>
-                        <div class="form-text">Puedes escribir solo el inicio de tu nombre para buscarlo.</div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">1. Semestre</label>
+                        <select class="form-select" id="selectSemestre" onchange="cargarGrupos()">
+                            <option value="">Cargando semestres...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">2. Grupo</label>
+                        <select class="form-select" id="selectGrupo" onchange="cargarEstudiantes()" disabled>
+                            <option value="">Selecciona un semestre primero</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">3. Estudiante</label>
+                        <select class="form-select" id="selectEstudiante" disabled>
+                            <option value="">Selecciona un grupo primero</option>
+                        </select>
                     </div>
                 </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-primary btn-lg px-5" onclick="consultarDatos()">Ver mi Retroalimentación</button>
+                </div>
+            </div>
+        </div>
 
-                <div id="resultado" class="mt-4"></div>
+        <!-- SECCIÓN DE RESULTADOS -->
+        <div id="seccion-resultados" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 id="tituloEstudiante" class="mb-0 fw-bold text-dark">Resultados</h4>
+                <button class="btn btn-outline-secondary btn-sm" onclick="volver()">← Volver al inicio</button>
+            </div>
+
+            <!-- Fila de Gráficos y Resumen -->
+            <div class="row mb-3">
+                <div class="col-md-7">
+                    <div class="card h-100 mb-0">
+                        <div class="card-header fw-bold">Aciertos y Errores por Área</div>
+                        <div class="card-body">
+                            <div class="chart-container"><canvas id="graficoAreas"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="card h-100 mb-0">
+                        <div class="card-header fw-bold">Resumen General</div>
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                            <h1 id="porcentajeGlobal" class="display-1 text-primary fw-bold">0%</h1>
+                            <p id="aciertosGlobal" class="lead text-muted">0 de 0 aciertos</p>
+                            
+                            <!-- ESPACIO RESERVADO PARA EL MODELO PREDICTIVO -->
+                            <div class="alert alert-secondary w-100 text-center mt-3 border-0 shadow-sm">
+                                <strong>🔮 Próximamente:</strong><br>
+                                <small>Predicción de nota final (Machine Learning)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla Detallada -->
+            <div class="card">
+                <div class="card-header fw-bold">Detalle por Pregunta</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0" id="tablaResultados">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Área</th>
+                                    <th>Nivel</th>
+                                    <th>Respuesta</th>
+                                    <th>Correcta</th>
+                                    <th>¿Acertó?</th>
+                                    <th>Solucionario</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBgLVbeC2qLpTvxZeamBcrCDrXxjNhsL6_qCupoS4OD6MlGUcR0AXO92uscKuzjiA/exec";
+        // URL de tu Google Apps Script
+        const API_URL = "https://script.google.com/macros/s/AKfycbzOoEEx8eXsnbW-lUros3DhpF4ZkAxM93WAf5HdMjbXsDinZ28FLks8q4cha7-TGyjy/exec";
+        let graficoAreasInstance = null;
 
-        // 1. Cargar la lista de estudiantes al abrir la página
-        async function cargarListaEstudiantes() {
+        // 1. Cargar Semestres al iniciar la página
+        window.onload = async () => {
+            const select = document.getElementById('selectSemestre');
             try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?lista=true`);
-                const estudiantes = await response.json();
+                const res = await fetch(`${API_URL}?action=semestres`);
+                const semestres = await res.json();
                 
-                const datalist = document.getElementById('lista-estudiantes');
-                estudiantes.sort().forEach(est => {
-                    const option = document.createElement('option');
-                    option.value = est;
-                    datalist.appendChild(option);
+                select.innerHTML = '<option value="">Selecciona un semestre</option>';
+                semestres.forEach(s => {
+                    select.innerHTML += `<option value="${s}">${s}</option>`;
                 });
-            } catch (error) {
-                console.error("No se pudo cargar la lista:", error);
+            } catch (e) { 
+                select.innerHTML = '<option value="">Error al cargar semestres</option>';
+                console.error(e); 
             }
-        }
+        };
 
-        window.onload = cargarListaEstudiantes;
-
-        // 2. Función para buscar los datos
-        async function cargarDatos() {
-            const nombre = document.getElementById('nombreEstudiante').value.trim();
-            const resultadoDiv = document.getElementById('resultado');
+        // 2. Cargar Grupos al seleccionar un semestre
+        async function cargarGrupos() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const selectGrupo = document.getElementById('selectGrupo');
+            const selectEst = document.getElementById('selectEstudiante');
             
-            if (!nombre) {
-                resultadoDiv.innerHTML = '<div class="alert alert-warning">Por favor, ingresa tu nombre.</div>';
+            // Limpiar los selectores dependientes
+            selectEst.innerHTML = '<option value="">Selecciona un grupo primero</option>';
+            selectEst.disabled = true;
+
+            if (!semestre) {
+                selectGrupo.innerHTML = '<option value="">Selecciona un semestre primero</option>';
+                selectGrupo.disabled = true;
                 return;
             }
 
-            resultadoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Buscando tus datos...</p></div>';
+            selectGrupo.innerHTML = '<option value="">Cargando grupos...</option>';
+            selectGrupo.disabled = false;
 
             try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?estudiante=${encodeURIComponent(nombre)}`);
-                const texto = await response.text();
+                const res = await fetch(`${API_URL}?action=grupos&semestre=${encodeURIComponent(semestre)}`);
+                const grupos = await res.json();
+                
+                selectGrupo.innerHTML = '<option value="">Selecciona un grupo</option>';
+                grupos.forEach(g => {
+                    selectGrupo.innerHTML += `<option value="${g}">${g}</option>`;
+                });
+            } catch (e) { 
+                selectGrupo.innerHTML = '<option value="">Error al cargar</option>';
+                console.error(e); 
+            }
+        }
 
+        // 3. Cargar Estudiantes al seleccionar un grupo
+        async function cargarEstudiantes() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const grupo = document.getElementById('selectGrupo').value;
+            const selectEst = document.getElementById('selectEstudiante');
+
+            if (!grupo) {
+                selectEst.innerHTML = '<option value="">Selecciona un grupo primero</option>';
+                selectEst.disabled = true;
+                return;
+            }
+
+            selectEst.innerHTML = '<option value="">Cargando estudiantes...</option>';
+            selectEst.disabled = false;
+
+            try {
+                const res = await fetch(`${API_URL}?action=estudiantes&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}`);
+                const estudiantes = await res.json();
+                
+                selectEst.innerHTML = '<option value="">Selecciona un estudiante</option>';
+                estudiantes.sort().forEach(e => {
+                    selectEst.innerHTML += `<option value="${e}">${e}</option>`;
+                });
+            } catch (e) { 
+                selectEst.innerHTML = '<option value="">Error al cargar</option>';
+                console.error(e); 
+            }
+        }
+
+        // 4. Consultar Datos y Generar Gráficos
+        async function consultarDatos() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const grupo = document.getElementById('selectGrupo').value;
+            const estudiante = document.getElementById('selectEstudiante').value;
+
+            if (!semestre || !grupo || !estudiante) {
+                alert("Por favor, selecciona el semestre, el grupo y el estudiante.");
+                return;
+            }
+
+            // Ocultar selección y mostrar resultados
+            document.getElementById('seccion-seleccion').style.display = 'none';
+            document.getElementById('seccion-resultados').style.display = 'block';
+            document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
+            
+            // Limpiar tabla y gráfico anterior
+            document.querySelector('#tablaResultados tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 mb-0">Buscando datos...</p></td></tr>';
+            
+            try {
+                const res = await fetch(`${API_URL}?action=datos&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}&estudiante=${encodeURIComponent(estudiante)}`);
+                const texto = await res.text();
+
+                // Si el servidor devuelve un JSON, es un error
                 if (texto.startsWith('{')) {
-                    const error = JSON.parse(texto);
-                    resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${error.error}</div>`;
+                    alert(JSON.parse(texto).error);
+                    volver();
                     return;
                 }
 
+                // Usamos PapaParse para leer el CSV
                 Papa.parse(texto, {
                     header: true,
                     skipEmptyLines: true,
                     complete: function(results) {
-                        const datos = results.data;
-                        
-                        if (datos.length === 0) {
-                            resultadoDiv.innerHTML = '<div class="alert alert-warning">No hay datos disponibles.</div>';
-                            return;
-                        }
-
-                        let aciertos = 0;
-                        datos.forEach(fila => {
-                            if (fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true')) aciertos++;
-                        });
-                        const porcentaje = ((aciertos / datos.length) * 100).toFixed(1);
-
-                        let html = `
-                            <div class="alert alert-info text-center">
-                                <h5>Resultado General: ${aciertos} de ${datos.length} aciertos (${porcentaje}%)</h5>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Área</th>
-                                            <th>Tip</th>
-                                            <th>Respuesta</th>
-                                            <th>Correcta</th>
-                                            <th>¿Acertó?</th>
-                                            <th>Solucionario</th>
-                                            <th>Estrategia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                        `;
-
-                        datos.forEach(fila => {
-                            const acerto = fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true');
-                            const clase = acerto ? 'table-success' : 'table-danger';
-                            const badge = acerto ? '<span class="badge badge-acierto">Sí</span>' : '<span class="badge badge-error">No</span>';
-                            
-                            html += `
-                                <tr class="${clase}">
-                                    <td>${fila['# Pregunta'] || ''}</td>
-                                    <td>${fila['Área'] || ''}</td>
-                                    <td>${fila['Tip'] || ''}</td>
-                                    <td>${fila['Respuesta del estudiante'] || ''}</td>
-                                    <td>${fila['Opción Correcta'] || ''}</td>
-                                    <td>${badge}</td>
-                                    <td><small>${fila['Solucionario'] || ''}</small></td>
-                                    <td><small>${fila['Estrategia'] || ''}</small></td>
-                                </tr>
-                            `;
-                        });
-
-                        html += '</tbody></table></div>';
-                        resultadoDiv.innerHTML = html;
+                        procesarDatos(results.data);
                     }
                 });
-
-            } catch (error) {
-                resultadoDiv.innerHTML = `<div class="alert alert-danger">Error al conectar: ${error.message}</div>`;
+            } catch (e) { 
+                alert("Error al conectar con la base de datos."); 
+                console.error(e);
+                volver(); 
             }
+        }
+
+        // 5. Procesar la información y llenar la pantalla
+        function procesarDatos(datos) {
+            let aciertos = 0;
+            let areasStats = {};
+            const tbody = document.querySelector('#tablaResultados tbody');
+            tbody.innerHTML = '';
+
+            if(datos.length === 0){
+                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay datos disponibles para este estudiante.</td></tr>';
+                 return;
+            }
+
+            datos.forEach(fila => {
+                const area = fila['Área'] || 'Desconocida';
+                // Verificamos si acertó (acepta "true", "True", "verdadero", etc.)
+                const acerto = fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true');
+                
+                if (acerto) aciertos++;
+                
+                // Acumular para el gráfico
+                if (!areasStats[area]) areasStats[area] = { total: 0, aciertos: 0 };
+                areasStats[area].total++;
+                if (acerto) areasStats[area].aciertos++;
+
+                // Llenar tabla
+                const clase = acerto ? 'table-success' : 'table-danger';
+                const badge = acerto ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>';
+                
+                tbody.innerHTML += `
+                    <tr class="${clase}">
+                        <td class="fw-bold text-center">${fila['# Pregunta'] || ''}</td>
+                        <td>${area}</td>
+                        <td>${fila['Nivel'] || ''}</td>
+                        <td class="fw-bold">${fila['Respuesta del estudiante'] || ''}</td>
+                        <td class="fw-bold">${fila['Opción Correcta'] || ''}</td>
+                        <td class="text-center">${badge}</td>
+                        <td><small class="text-muted">${fila['Solucionario'] || ''}</small></td>
+                    </tr>
+                `;
+            });
+
+            // Actualizar resumen
+            const porcentaje = ((aciertos / datos.length) * 100).toFixed(1);
+            document.getElementById('porcentajeGlobal').innerText = `${porcentaje}%`;
+            document.getElementById('aciertosGlobal').innerText = `${aciertos} de ${datos.length} aciertos`;
+
+            // Generar Gráfico
+            generarGrafico(areasStats);
+        }
+
+        // 6. Dibujar el gráfico de barras
+        function generarGrafico(stats) {
+            const ctx = document.getElementById('graficoAreas').getContext('2d');
+            
+            if (graficoAreasInstance) {
+                graficoAreasInstance.destroy();
+            }
+
+            const labels = Object.keys(stats);
+            const dataAciertos = labels.map(l => stats[l].aciertos);
+            const dataErrores = labels.map(l => stats[l].total - stats[l].aciertos);
+
+            graficoAreasInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Aciertos', data: dataAciertos, backgroundColor: '#198754', borderRadius: 4 },
+                        { label: 'Errores', data: dataErrores, backgroundColor: '#dc3545', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: { 
+                        x: { stacked: true }, 
+                        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } 
+                    }
+                }
+            });
+        }
+
+        // 7. Volver a la pantalla principal
+        function volver() {
+            document.getElementById('seccion-resultados').style.display = 'none';
+            document.getElementById('seccion-seleccion').style.display = 'block';
+            document.getElementById('selectEstudiante').value = '';
+            document.getElementById('porcentajeGlobal').innerText = '0%';
+            document.getElementById('aciertosGlobal').innerText = '0 de 0 aciertos';
         }
     </script>
 </body>
