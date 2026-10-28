@@ -15,10 +15,6 @@
         .table th { background-color: #34495e; color: white; }
         .badge-acierto { background-color: #198754; }
         .badge-error { background-color: #dc3545; }
-        /* Estilos para el autocompletado */
-        .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; background-color: #fff; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .autocomplete-items div { padding: 10px; cursor: pointer; background-color: #fff; border-bottom: 1px solid #d4d4d4; }
-        .autocomplete-items div:hover { background-color: #e9ecef; }
     </style>
 </head>
 <body>
@@ -26,14 +22,16 @@
         <div class="card">
             <div class="card-header text-center">
                 <h3>📊 Consulta tu Retroalimentación</h3>
-                <p class="mb-0">Escribe tu nombre para buscar tus resultados.</p>
+                <p class="mb-0">Ingresa tu nombre completo tal como lo registraste.</p>
             </div>
             <div class="card-body p-4">
                 <div class="row justify-content-center mb-4">
-                    <div class="col-md-8 position-relative">
-                        <label for="nombreEstudiante" class="form-label fw-bold">Buscar estudiante:</label>
-                        <input type="text" class="form-control form-control-lg" id="nombreEstudiante" placeholder="Escribe tu nombre..." autocomplete="off">
-                        <div id="autocomplete-list" class="autocomplete-items"></div>
+                    <div class="col-md-8">
+                        <label for="nombreEstudiante" class="form-label fw-bold">Nombre del estudiante (ej: Ana Perez):</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-lg" id="nombreEstudiante" placeholder="Escribe tu nombre aquí...">
+                            <button class="btn btn-primary" onclick="cargarDatos()">Consultar</button>
+                        </div>
                     </div>
                 </div>
 
@@ -45,80 +43,27 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFHoiW-MvgNcAvG9ltNhSQpiDQm1WdK3-qA97NQ8sa4KP8YCc1kYMliVosUEywT_n_/exec";
-        let listaNombres = [];
+        const APPS_SCRIPT_URL = "PON_AQUI_TU_URL_QUE_TERMINA_EN_EXEC";
 
-        // 1. Cargar la lista de nombres al abrir la página
-        function cargarListaNombres() {
-            const callbackName = 'jsonp_lista_' + Math.round(100000 * Math.random());
-            window[callbackName] = function(data) {
-                document.body.removeChild(script);
-                delete window[callbackName];
-                if (Array.isArray(data)) {
-                    listaNombres = data;
-                }
-            };
-            const script = document.createElement('script');
-            script.src = `${APPS_SCRIPT_URL}?accion=lista&callback=${callbackName}`;
-            document.body.appendChild(script);
-        }
-
-        // 2. Lógica del autocompletado
-        const input = document.getElementById("nombreEstudiante");
-        const list = document.getElementById("autocomplete-list");
-
-        input.addEventListener("input", function() {
-            const val = this.value;
-            closeAllLists();
-            if (!val) { return false; }
+        function cargarDatos() {
+            const nombreInput = document.getElementById('nombreEstudiante').value.trim();
+            const resultadoDiv = document.getElementById('resultado');
             
-            // Filtrar nombres que empiecen con las letras escritas
-            const coincidencias = listaNombres.filter(nombre => 
-                nombre.toLowerCase().startsWith(val.toLowerCase())
-            );
-
-            if (coincidencias.length === 0) {
-                list.innerHTML = '<div class="text-muted p-2">No se encontraron nombres</div>';
+            if (!nombreInput) {
+                resultadoDiv.innerHTML = '<div class="alert alert-warning">Por favor, ingresa tu nombre.</div>';
                 return;
             }
 
-            coincidencias.forEach(nombre => {
-                const item = document.createElement("div");
-                // Resaltar la parte que coincide
-                item.innerHTML = "<strong>" + nombre.substr(0, val.length) + "</strong>" + nombre.substr(val.length);
-                item.addEventListener("click", function() {
-                    input.value = nombre;
-                    closeAllLists();
-                    cargarDatos(nombre); // Cargar datos automáticamente
-                });
-                list.appendChild(item);
-            });
-        });
+            resultadoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Buscando tus datos...</p></div>';
 
-        function closeAllLists() {
-            list.innerHTML = "";
-        }
-
-        // Cerrar la lista si se hace clic fuera
-        document.addEventListener("click", function (e) {
-            if (e.target !== input) {
-                closeAllLists();
-            }
-        });
-
-        // 3. Cargar los datos del estudiante seleccionado
-        function cargarDatos(nombre) {
-            const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.innerHTML = '<div class="text-center mt-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Cargando resultados...</p></div>';
-
-            const callbackName = 'jsonp_datos_' + Math.round(100000 * Math.random());
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
 
             window[callbackName] = function(data) {
                 document.body.removeChild(script);
                 delete window[callbackName];
 
                 if (typeof data === 'object' && data.error) {
-                    resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${data.error}</div>`;
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${data.error}<br><small>Asegúrate de escribir tu nombre con espacios (ej: Ana Perez) en lugar de guiones bajos.</small></div>`;
                     return;
                 }
 
@@ -177,17 +122,18 @@
                     resultadoDiv.innerHTML = html;
 
                 } catch (e) {
-                    resultadoDiv.innerHTML = `<div class="alert alert-danger">Error procesando los datos: ${e.message}</div>`;
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">Error procesando los datos. Verifica tu nombre.</div>`;
                 }
             };
 
             const script = document.createElement('script');
-            script.src = `${APPS_SCRIPT_URL}?accion=datos&estudiante=${encodeURIComponent(nombre)}&callback=${callbackName}`;
+            // Reemplazamos espacios por guiones bajos para buscar el archivo
+            const nombreArchivo = nombreInput.replace(/ /g, '_');
+            const url = `${APPS_SCRIPT_URL}?accion=datos&estudiante=${encodeURIComponent(nombreArchivo)}&callback=${callbackName}`;
+            
+            script.src = url;
             document.body.appendChild(script);
         }
-
-        // Iniciar la carga de nombres al abrir la página
-        window.onload = cargarListaNombres;
     </script>
 </body>
 </html>
