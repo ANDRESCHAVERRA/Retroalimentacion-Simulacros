@@ -59,34 +59,36 @@
 
             resultadoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Buscando tus datos...</p></div>';
 
-            try {
-                // Llamamos al Apps Script (esto fallará hasta que lo configuremos en el Paso 5)
-                const response = await fetch(`${APPS_SCRIPT_URL}?estudiante=${encodeURIComponent(nombre)}`);
-                const texto = await response.text();
+            // Creamos un nombre único para la función callback
+            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
 
-                // Verificamos si es un error
-                if (texto.startsWith('{')) {
-                    const error = JSON.parse(texto);
-                    resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${error.error}</div>`;
+            // Definimos la función que Apps Script llamará
+            window[callbackName] = function(data) {
+                // Eliminamos el script de la página una vez recibido
+                document.body.removeChild(script);
+                delete window[callbackName];
+
+                // Si hay un error en los datos
+                if (data.error) {
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">⚠️ ${data.error}</div>`;
                     return;
                 }
 
-                // Parseamos el CSV
-                const filas = texto.trim().split('\n').map(fila => fila.split(','));
-                const cabecera = filas[0];
-                const datos = filas.slice(1);
+                // La primera fila son los encabezados, el resto son los datos
+                const cabecera = data[0];
+                const filas = data.slice(1);
 
-                // Calculamos el porcentaje de acierto
+                // Contamos los aciertos (buscando 'True' en la columna 9)
                 let aciertos = 0;
-                datos.forEach(fila => {
+                filas.forEach(fila => {
                     if (fila[9] && fila[9].toLowerCase().includes('true')) aciertos++;
                 });
-                const porcentaje = ((aciertos / datos.length) * 100).toFixed(1);
+                const porcentaje = ((aciertos / filas.length) * 100).toFixed(1);
 
-                // Construimos el HTML
+                // Construimos la tabla HTML
                 let html = `
                     <div class="alert alert-info text-center">
-                        <h5>Resultado General: ${aciertos} de ${datos.length} aciertos (${porcentaje}%)</h5>
+                        <h5>Resultado General: ${aciertos} de ${filas.length} aciertos (${porcentaje}%)</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle">
@@ -104,7 +106,7 @@
                             <tbody>
                 `;
 
-                datos.forEach(fila => {
+                filas.forEach(fila => {
                     const acerto = fila[9] && fila[9].toLowerCase().includes('true');
                     const clase = acerto ? 'table-success' : 'table-danger';
                     const badge = acerto ? '<span class="badge badge-acierto">Sí</span>' : '<span class="badge badge-error">No</span>';
@@ -124,10 +126,15 @@
 
                 html += '</tbody></table></div>';
                 resultadoDiv.innerHTML = html;
+            };
 
-            } catch (error) {
-                resultadoDiv.innerHTML = `<div class="alert alert-danger">Error al conectar con la base de datos: ${error.message}</div>`;
-            }
+            // Creamos la etiqueta <script> para hacer la petición JSONP
+            const script = document.createElement('script');
+            // IMPORTANTE: Asegúrate de que la URL sea la correcta
+            const url = `https://script.google.com/macros/s/AKfycbwFHoiW-MvgNcAvG9ltNhSQpiDQm1WdK3-qA97NQ8sa4KP8YCc1kYMliVosUEywT_n_/exec?estudiante=${encodeURIComponent(nombre)}&callback=${callbackName}`;
+            
+            script.src = url;
+            document.body.appendChild(script);
         }
     </script>
 </body>
