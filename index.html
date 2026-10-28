@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .container { max-width: 1200px; margin-top: 30px; }
+        .container { max-width: 1300px; margin-top: 30px; } /* Un poco más ancho para que quepa todo */
         .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; }
         .card-header { background-color: #2c3e50; color: white; border-radius: 12px 12px 0 0 !important; padding: 20px; }
         .table-success { background-color: #d1e7dd !important; }
@@ -16,7 +16,9 @@
         .table th { background-color: #34495e; color: white; position: sticky; top: 0; }
         .badge-acierto { background-color: #198754; }
         .badge-error { background-color: #dc3545; }
-        .table-responsive { max-height: 70vh; overflow-y: auto; }
+        .table-responsive { max-height: 75vh; overflow-y: auto; }
+        /* Hacer la tabla un poco más compacta */
+        .table td, .table th { font-size: 0.9rem; padding: 8px; }
     </style>
 </head>
 <body>
@@ -31,7 +33,6 @@
                     <div class="col-md-8">
                         <label for="nombreEstudiante" class="form-label fw-bold">Nombre del estudiante:</label>
                         <div class="input-group">
-                            <!-- El atributo list="lista-estudiantes" activa las sugerencias -->
                             <input type="text" class="form-control" id="nombreEstudiante" list="lista-estudiantes" placeholder="Escribe tu nombre aquí...">
                             <datalist id="lista-estudiantes"></datalist>
                             <button class="btn btn-primary" onclick="cargarDatos()">Consultar</button>
@@ -65,7 +66,6 @@
             }
         }
 
-        // Ejecutamos la carga de la lista en cuanto abre la página
         window.onload = cargarListaEstudiantes;
 
         // 2. Función para buscar los datos
@@ -81,7 +81,6 @@
             resultadoDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Buscando tus datos...</p></div>';
 
             try {
-                // No necesitamos reemplazar los espacios aquí, el Apps Script ya se encarga de eso
                 const response = await fetch(`${APPS_SCRIPT_URL}?estudiante=${encodeURIComponent(nombre)}`);
                 const texto = await response.text();
 
@@ -122,6 +121,7 @@
                                             <th>Respuesta</th>
                                             <th>Correcta</th>
                                             <th>¿Acertó?</th>
+                                            <th>Solucionario</th>
                                             <th>Estrategia</th>
                                         </tr>
                                     </thead>
@@ -141,6 +141,7 @@
                                     <td>${fila['Respuesta del estudiante'] || ''}</td>
                                     <td>${fila['Opción Correcta'] || ''}</td>
                                     <td>${badge}</td>
+                                    <td><small>${fila['Solucionario'] || ''}</small></td>
                                     <td><small>${fila['Estrategia'] || ''}</small></td>
                                 </tr>
                             `;
