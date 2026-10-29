@@ -24,7 +24,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- SECCIÓN DE SELECCIÓN -->
+        <!-- SELECCIÓN -->
         <div class="card" id="seccion-seleccion">
             <div class="card-header text-center py-3">
                 <h3 class="mb-0">🎓 Portal de Retroalimentación</h3>
@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DE RESULTADOS -->
+        <!-- RESULTADOS -->
         <div id="seccion-resultados" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 id="tituloEstudiante" class="mb-0 fw-bold text-dark">Resultados</h4>
@@ -62,7 +62,6 @@
             </div>
 
             <div class="row mb-3">
-                <!-- Gráfico de Evolución -->
                 <div class="col-md-8">
                     <div class="card h-100 mb-0">
                         <div class="card-header fw-bold">📈 Evolución de los Simulacros</div>
@@ -71,7 +70,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Tarjeta de Nota Final -->
                 <div class="col-md-4">
                     <div class="card h-100 mb-0">
                         <div class="card-header fw-bold">Puntaje Final</div>
@@ -94,11 +92,10 @@
                 </div>
             </div>
 
-            <!-- Gráfico de Áreas -->
             <div class="row mb-3">
                 <div class="col-md-12">
                     <div class="card mb-0">
-                        <div class="card-header fw-bold">📊 Aciertos y Errores por Área (Simulacro Seleccionado)</div>
+                        <div class="card-header fw-bold">📊 Aciertos y Errores por Área</div>
                         <div class="card-body">
                             <div class="chart-container" style="height: 250px;"><canvas id="graficoAreas"></canvas></div>
                         </div>
@@ -106,7 +103,6 @@
                 </div>
             </div>
 
-            <!-- Tabla Detallada -->
             <div class="card">
                 <div class="card-header fw-bold">Detalle por Pregunta</div>
                 <div class="card-body p-0">
@@ -248,30 +244,28 @@
         }
 
         function procesarNotas(notasSimulacros, notaFinal, tipoNota) {
-            // Configurar la tarjeta según si es Real o Predicha
             const tarjeta = document.getElementById('tarjetaNota');
             const titulo = document.getElementById('tituloNota');
             const subtitulo = document.getElementById('subtituloNota');
             const notaTxt = document.getElementById('notaFinal');
 
             if (tipoNota === "Real") {
-                tarjeta.style.backgroundColor = '#198754'; // Verde
+                tarjeta.style.backgroundColor = '#198754'; 
                 titulo.innerText = "Puntaje Real";
                 subtitulo.innerText = "Nota obtenida en el examen final";
                 notaTxt.innerText = notaFinal;
             } else if (tipoNota === "Predicha") {
-                tarjeta.style.backgroundColor = '#0d6efd'; // Azul
+                tarjeta.style.backgroundColor = '#0d6efd'; 
                 titulo.innerText = "Puntaje Predicho";
                 subtitulo.innerText = "Basado en Machine Learning";
                 notaTxt.innerText = notaFinal;
             } else {
-                tarjeta.style.backgroundColor = '#6c757d'; // Gris
+                tarjeta.style.backgroundColor = '#6c757d'; 
                 titulo.innerText = "Puntaje Pendiente";
                 subtitulo.innerText = "Aún no hay predicción ni nota real";
                 notaTxt.innerText = "--";
             }
 
-            // Preparar datos para el gráfico
             const labels = [];
             const dataNotas = [];
             
@@ -288,7 +282,7 @@
                 }
             });
 
-            // Si hay nota final (Real o Predicha), agregarla al final
+            // Agregar el punto final (Real o Predicha)
             if (tipoNota === "Real") {
                 labels.push("Real");
                 dataNotas.push(parseFloat(notaFinal));
@@ -324,15 +318,8 @@
             const ctx = document.getElementById('graficoEvolucion').getContext('2d');
             if (chartEvolucion) chartEvolucion.destroy();
 
-            // Colores: Azul por defecto, Rojo para Real, Naranja para Predicción
-            const pointColors = dataNotas.map((_, i) => {
-                if (i === dataNotas.length - 1) {
-                    if (tipoNota === "Real") return '#dc3545'; // Rojo
-                    if (tipoNota === "Predicha") return '#fd7e14'; // Naranja
-                }
-                return '#0d6efd'; // Azul
-            });
-            
+            // Todos los simulacros son azules. El último punto (Real o Predicho) es ROJO.
+            const pointColors = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tipoNota !== "Ninguna") ? '#dc3545' : '#0d6efd');
             const pointSizes = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tipoNota !== "Ninguna") ? 9 : 5);
 
             chartEvolucion = new Chart(ctx, {
@@ -363,7 +350,7 @@
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.parsed.y !== null) label += context.parsed.y + '%';
-                                    if (context.dataIndex === dataNotas.length - 1) {
+                                    if (context.dataIndex === dataNotas.length - 1 && tipoNota !== "Ninguna") {
                                         if (tipoNota === "Real") label += ' (Nota Real)';
                                         if (tipoNota === "Predicha") label += ' (Predicción ML)';
                                     }
