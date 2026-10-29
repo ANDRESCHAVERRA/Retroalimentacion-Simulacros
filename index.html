@@ -24,7 +24,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- SELECCIÓN -->
+        <!-- SECCIÓN DE SELECCIÓN -->
         <div class="card" id="seccion-seleccion">
             <div class="card-header text-center py-3">
                 <h3 class="mb-0">🎓 Portal de Retroalimentación</h3>
@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <!-- RESULTADOS -->
+        <!-- SECCIÓN DE RESULTADOS -->
         <div id="seccion-resultados" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 id="tituloEstudiante" class="mb-0 fw-bold text-dark">Resultados</h4>
@@ -131,7 +131,7 @@
                 const semestres = await res.json();
                 select.innerHTML = '<option value="">Selecciona un semestre</option>';
                 semestres.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
-            } catch (e) { select.innerHTML = '<option value="">Error</option>'; }
+            } catch (e) { select.innerHTML = '<option value="">Error al cargar</option>'; }
         };
 
         async function cargarGrupos() {
@@ -282,7 +282,6 @@
                 }
             });
 
-            // Agregar el punto final (Real o Predicha)
             if (tipoNota === "Real") {
                 labels.push("Real");
                 dataNotas.push(parseFloat(notaFinal));
@@ -318,7 +317,6 @@
             const ctx = document.getElementById('graficoEvolucion').getContext('2d');
             if (chartEvolucion) chartEvolucion.destroy();
 
-            // Todos los simulacros son azules. El último punto (Real o Predicho) es ROJO.
             const pointColors = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tipoNota !== "Ninguna") ? '#dc3545' : '#0d6efd');
             const pointSizes = dataNotas.map((_, i) => (i === dataNotas.length - 1 && tipoNota !== "Ninguna") ? 9 : 5);
 
