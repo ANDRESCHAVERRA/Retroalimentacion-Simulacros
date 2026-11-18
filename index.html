@@ -148,7 +148,6 @@
             margin-bottom: 16px;
         }
 
-        /* Contenedor flexible para la gráfica y el recuadro verde de score final */
         .area-superior-resultados {
             display: flex;
             flex-wrap: wrap;
@@ -167,7 +166,6 @@
             border-radius: 10px;
         }
 
-        /* Recuadro verde para el Score Final UdeA */
         .score-final-box {
             flex: 1;
             min-width: 220px;
@@ -626,7 +624,6 @@
             const scoreContainer = document.getElementById('score-final-container');
             const semestre = document.getElementById('selectSemestre').value;
 
-            // Mostrar el recuadro verde solo si es el semestre 2025-1 y el estudiante tiene puntaje
             if (semestre === "2025-1" && scoreFinalEstudiante !== null && scoreFinalEstudiante !== "") {
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
