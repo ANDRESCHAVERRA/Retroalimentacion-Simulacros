@@ -162,51 +162,91 @@
             color: var(--naranja-oscuro);
         }
 
-        /* Estilos de la caja de resumen y barras de progreso */
+        /* Estilos de la caja de resumen y gráficos verticales */
         .resumen-box {
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
             border-left: 5px solid var(--naranja);
-            padding: 16px 20px;
+            padding: 20px;
             margin-bottom: 24px;
             border-radius: 8px;
         }
 
-        .item-estadistica {
-            margin-bottom: 14px;
-        }
-
-        .item-estadistica:last-child {
-            margin-bottom: 0;
-            padding-top: 6px;
-            border-top: 1px dashed var(--naranja-borde);
-        }
-
-        .info-stat {
+        .contenedor-graficos {
             display: flex;
-            justify-content: space-between;
-            font-size: 14.5px;
-            margin-bottom: 5px;
-            font-weight: 500;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: space-around;
+            align-items: flex-end;
         }
 
-        .info-stat strong {
+        .bloque-grafico {
+            flex: 1;
+            min-width: 260px;
+            background: var(--blanco);
+            border: 1px solid var(--naranja-borde);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .bloque-grafico h5 {
+            margin: 0 0 15px 0;
             color: var(--naranja-oscuro);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .barra-fondo {
-            width: 100%;
-            height: 10px;
-            background-color: #e5e7eb;
-            border-radius: 999px;
-            overflow: hidden;
+        .chart-container-vertical {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 160px;
+            border-bottom: 2px solid var(--naranja);
+            padding: 0 10px;
+            gap: 20px;
         }
 
-        .barra-progreso {
+        .barra-vertical-grupo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
             height: 100%;
-            background: linear-gradient(90deg, var(--naranja), var(--naranja-oscuro));
-            border-radius: 999px;
-            transition: width 0.6s ease-in-out;
+            justify-content: flex-end;
+        }
+
+        .valor-barra {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--texto);
+            margin-bottom: 4px;
+        }
+
+        .columna-barra-fondo {
+            width: 36px;
+            height: 120px;
+            background-color: #f3f4f6;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+            border: 1px solid var(--borde);
+        }
+
+        .columna-barra-progreso {
+            width: 100%;
+            background: linear-gradient(180deg, var(--naranja), var(--naranja-oscuro));
+            border-radius: 4px 4px 0 0;
+            transition: height 0.6s ease-in-out;
+        }
+
+        .etiqueta-barra {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--texto);
+            margin-top: 6px;
         }
 
         .tabla-wrapper {
@@ -463,35 +503,55 @@
                         if (acerto) totalAciertos++;
                     });
 
-                    // Función auxiliar para generar cada barra con su respectiva estadística
-                    const generarItemBarra = (label, aciertos, total) => {
-                        const pct = total > 0 ? ((aciertos / total) * 100).toFixed(1) : "0.0";
-                        return `
-                            <div class="item-estadistica">
-                                <div class="info-stat">
-                                    <span><strong>${label}:</strong> ${aciertos}/${total}</span>
-                                    <span>(${pct}%)</span>
-                                </div>
-                                <div class="barra-fondo">
-                                    <div class="barra-progreso" style="width: ${pct}%;"></div>
-                                </div>
-                            </div>
-                        `;
-                    };
+                    // Cálculo de porcentajes para las alturas de las barras verticales
+                    const pctCL = stats.CL.total > 0 ? ((stats.CL.aciertos / stats.CL.total) * 100).toFixed(1) : "0.0";
+                    const pctRL = stats.RL.total > 0 ? ((stats.RL.aciertos / stats.RL.total) * 100).toFixed(1) : "0.0";
+                    const pctTotal = totalPreguntas > 0 ? ((totalAciertos / totalPreguntas) * 100).toFixed(1) : "0.0";
 
                     let htmlResumen = `<h4>Resumen de Aciertos - Simulacro ${numSim}</h4>`;
                     htmlResumen += `<div class="resumen-box">`;
-                    htmlResumen += generarItemBarra("CL", stats.CL.aciertos, stats.CL.total);
-                    htmlResumen += generarItemBarra("RL", stats.RL.aciertos, stats.RL.total);
+                    htmlResumen += `<div class="contenedor-graficos">`;
 
-                    Object.keys(stats).forEach(area => {
-                        if (area !== 'CL' && area !== 'RL') {
-                            htmlResumen += generarItemBarra(escaparHTML(area), stats[area].aciertos, stats[area].total);
-                        }
-                    });
+                    // Gráfico 1: CL y RL (Sobre 40 cada uno)
+                    htmlResumen += `
+                        <div class="bloque-grafico">
+                            <h5>Áreas Específicas (Sobre 40)</h5>
+                            <div class="chart-container-vertical">
+                                <div class="barra-vertical-grupo">
+                                    <span class="valor-barra">${stats.CL.aciertos}/40<br>(${pctCL}%)</span>
+                                    <div class="columna-barra-fondo">
+                                        <div class="columna-barra-progreso" style="height: ${pctCL}%;"></div>
+                                    </div>
+                                    <span class="etiqueta-barra">CL</span>
+                                </div>
+                                <div class="barra-vertical-grupo">
+                                    <span class="valor-barra">${stats.RL.aciertos}/40<br>(${pctRL}%)</span>
+                                    <div class="columna-barra-fondo">
+                                        <div class="columna-barra-progreso" style="height: ${pctRL}%;"></div>
+                                    </div>
+                                    <span class="etiqueta-barra">RL</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
 
-                    htmlResumen += generarItemBarra("Total (CL + RL)", totalAciertos, totalPreguntas);
-                    htmlResumen += `</div>`;
+                    // Gráfico 2: Total General (Sobre 80)
+                    htmlResumen += `
+                        <div class="bloque-grafico">
+                            <h5>Total General (Sobre 80)</h5>
+                            <div class="chart-container-vertical">
+                                <div class="barra-vertical-grupo">
+                                    <span class="valor-barra">${totalAciertos}/80<br>(${pctTotal}%)</span>
+                                    <div class="columna-barra-fondo">
+                                        <div class="columna-barra-progreso" style="height: ${pctTotal}%;"></div>
+                                    </div>
+                                    <span class="etiqueta-barra">Total</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    htmlResumen += `</div></div>`;
 
                     let htmlTabla = `<h4>Detalle de Preguntas</h4>`;
                     htmlTabla += `<div class="tabla-wrapper"><table>
