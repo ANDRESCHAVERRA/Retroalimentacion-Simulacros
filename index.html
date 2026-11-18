@@ -3,52 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retroalimentación Simple</title>
+    <title>Consulta de Retroalimentación</title>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        select, button { padding: 10px; margin: 5px; font-size: 16px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .resumen-box { background: #f9f9f9; padding: 14px; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 6px; }
-        .resumen-box p { margin: 6px 0; }
-        .oculto { display: none; }
+        :root {
+            --naranja: #f97316;
+            --naranja-oscuro: #ea580c;
+            --naranja-suave: #fff7ed;
+            --naranja-borde: #fed7aa;
+            --blanco: #ffffff;
+            --fondo: #fffaf5;
+            --texto: #1f2937;
+            --texto-suave: #6b7280;
+            --borde: #e5e7eb;
+
+            --verde-fila: #ecfdf5;
+            --verde-borde: #a7f3d0;
+            --verde-texto: #065f46;
+
+            --rojo-fila: #fef2f2;
+            --rojo-borde: #fecaca;
+            --rojo-texto: #991b1b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--fondo);
+            color: var(--texto);
+            margin: 0;
+            padding: 24px 16px;
+        }
+
+        .contenedor-principal {
+            max-width: 1150px;
+            margin: 0 auto;
+            background-color: var(--blanco);
+            border: 1px solid var(--naranja-borde);
+            border-radius: 14px;
+            padding: 28px;
+            box-shadow: 0 8px 24px rgba(249, 115, 22, 0.08);
+        }
+
+        h2 {
+            margin: 0 0 20px 0;
+            color: var(--naranja-oscuro);
+            font-size: 1.7rem;
+            border-bottom: 3px solid var(--naranja);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        h3 {
+            margin: 0 0 14px 0;
+            color: var(--texto);
+            font-size: 1.3rem;
+        }
+
+        h4 {
+            margin: 20px 0 10px 0;
+            color: var(--naranja-oscuro);
+            font-size: 1.05rem;
+        }
+
+        .barra-controles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            background-color: var(--naranja-suave);
+            border: 1px solid var(--naranja-borde);
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        select {
+            padding: 10px 14px;
+            font-size: 15px;
+            border: 1.5px solid var(--naranja-borde);
+            border-radius: 8px;
+            background-color: var(--blanco);
+            color: var(--texto);
+            min-width: 190px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--naranja);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+        }
+
+        select:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        button {
+            padding: 10px 18px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--naranja);
+            color: var(--blanco);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--naranja-oscuro);
+        }
+
+        button:active {
+            transform: scale(0.99);
+        }
+
+        .btn-secundario {
+            background-color: var(--blanco);
+            color: var(--naranja-oscuro);
+            border: 1.5px solid var(--naranja);
+        }
+
+        .btn-secundario:hover {
+            background-color: var(--naranja-suave);
+            color: var(--naranja-oscuro);
+        }
+
+        .encabezado-resultados {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .selector-simulacro {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            background-color: var(--naranja-suave);
+            border-radius: 8px;
+            border: 1px solid var(--naranja-borde);
+        }
+
+        .selector-simulacro label {
+            font-weight: 600;
+            color: var(--naranja-oscuro);
+        }
+
+        .resumen-box {
+            background-color: var(--naranja-suave);
+            border: 1px solid var(--naranja-borde);
+            border-left: 5px solid var(--naranja);
+            padding: 14px 18px;
+            margin-bottom: 22px;
+            border-radius: 8px;
+        }
+
+        .resumen-box p {
+            margin: 7px 0;
+            font-size: 15px;
+        }
+
+        .resumen-box strong {
+            color: var(--naranja-oscuro);
+        }
+
+        .tabla-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--naranja-borde);
+            box-shadow: 0 2px 10px rgba(249, 115, 22, 0.05);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 720px;
+            background-color: var(--blanco);
+        }
+
+        th {
+            background-color: var(--naranja);
+            color: var(--blanco);
+            font-weight: 600;
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 14px;
+            letter-spacing: 0.2px;
+        }
+
+        td {
+            padding: 11px 14px;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            vertical-align: top;
+        }
+
+        tr.fila-acierto {
+            background-color: var(--verde-fila);
+        }
+
+        tr.fila-acierto:hover {
+            background-color: #d1fae5;
+        }
+
+        tr.fila-error {
+            background-color: var(--rojo-fila);
+        }
+
+        tr.fila-error:hover {
+            background-color: #fee2e2;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-si {
+            background-color: var(--verde-borde);
+            color: var(--verde-texto);
+        }
+
+        .badge-no {
+            background-color: var(--rojo-borde);
+            color: var(--rojo-texto);
+        }
+
+        .oculto {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Consulta de Retroalimentación</h2>
+    <div class="contenedor-principal">
+        <h2>Consulta de Retroalimentación</h2>
 
-    <!-- Selectores -->
-    <div id="seccion-seleccion">
-        <select id="selectSemestre" onchange="cargarGrupos()">
-            <option value="">Cargando semestres...</option>
-        </select>
-        
-        <select id="selectGrupo" onchange="cargarEstudiantes()" disabled>
-            <option value="">Selecciona un semestre</option>
-        </select>
-        
-        <select id="selectEstudiante" disabled>
-            <option value="">Selecciona un grupo</option>
-        </select>
-        
-        <button onclick="consultarDatos()">Ver Retroalimentación</button>
-    </div>
+        <!-- Selectores -->
+        <div id="seccion-seleccion" class="barra-controles">
+            <select id="selectSemestre" onchange="cargarGrupos()">
+                <option value="">Cargando semestres...</option>
+            </select>
 
-    <!-- Resultados -->
-    <div id="seccion-resultados" class="oculto">
-        <h3 id="tituloEstudiante"></h3>
-        <button onclick="volver()">← Volver</button>
-        
-        <br><br>
-        <label>Selecciona el simulacro: </label>
-        <select id="selectSimulacro" onchange="mostrarSimulacroSeleccionado()">
-            <option value="">Selecciona un simulacro</option>
-        </select>
+            <select id="selectGrupo" onchange="cargarEstudiantes()" disabled>
+                <option value="">Selecciona un semestre</option>
+            </select>
 
-        <div id="tabla-container"></div>
+            <select id="selectEstudiante" disabled>
+                <option value="">Selecciona un grupo</option>
+            </select>
+
+            <button onclick="consultarDatos()">Ver Retroalimentación</button>
+        </div>
+
+        <!-- Resultados -->
+        <div id="seccion-resultados" class="oculto">
+            <div class="encabezado-resultados">
+                <h3 id="tituloEstudiante"></h3>
+                <button class="btn-secundario" onclick="volver()">← Volver</button>
+            </div>
+
+            <div class="selector-simulacro">
+                <label for="selectSimulacro">Selecciona el simulacro:</label>
+                <select id="selectSimulacro" onchange="mostrarSimulacroSeleccionado()">
+                    <option value="">Selecciona un simulacro</option>
+                </select>
+            </div>
+
+            <div id="tabla-container"></div>
+        </div>
     </div>
 
     <script>
@@ -193,7 +434,6 @@
                         if (acerto) totalAciertos++;
                     });
 
-                    // Proporción afuera y solo el porcentaje entre paréntesis
                     const formatoProporcion = (aciertos, total) => {
                         const pct = total > 0 ? ((aciertos / total) * 100).toFixed(1) : "0.0";
                         return `${aciertos}/${total} (${pct}%)`;
@@ -214,7 +454,7 @@
                     htmlResumen += `</div>`;
 
                     let htmlTabla = `<h4>Detalle de Preguntas</h4>`;
-                    htmlTabla += `<table>
+                    htmlTabla += `<div class="tabla-wrapper"><table>
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -231,19 +471,23 @@
                     datos.forEach(fila => {
                         const acerto = String(fila['¿Acertó?'] || '').trim().toUpperCase() === 'TRUE';
                         const solucionario = fila['Solucionario'] || '';
+                        const claseFila = acerto ? 'fila-acierto' : 'fila-error';
+                        const badge = acerto
+                            ? `<span class="badge badge-si">Sí</span>`
+                            : `<span class="badge badge-no">No</span>`;
 
-                        htmlTabla += `<tr>
+                        htmlTabla += `<tr class="${claseFila}">
                             <td>${escaparHTML(fila['# Pregunta'])}</td>
                             <td>${escaparHTML(fila['Área'])}</td>
                             <td>${escaparHTML(fila['Nivel'])}</td>
                             <td>${escaparHTML(fila['Respuesta del estudiante'])}</td>
                             <td>${escaparHTML(fila['Opción Correcta'])}</td>
-                            <td>${acerto ? 'Sí' : 'No'}</td>
+                            <td>${badge}</td>
                             <td>${escaparHTML(solucionario)}</td>
                         </tr>`;
                     });
 
-                    htmlTabla += `</tbody></table>`;
+                    htmlTabla += `</tbody></table></div>`;
                     container.innerHTML = htmlResumen + htmlTabla;
                 }
             });
