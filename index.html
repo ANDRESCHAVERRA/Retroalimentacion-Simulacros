@@ -16,6 +16,7 @@
             --texto: #1f2937;
             --texto-suave: #6b7280;
             --borde: #e5e7eb;
+            --azul: #2563eb;
 
             --verde-fila: #ecfdf5;
             --verde-borde: #a7f3d0;
@@ -143,6 +144,77 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 16px;
+        }
+
+        /* Gráfica de evolución del estudiante */
+        .evolucion-box {
+            background-color: var(--naranja-suave);
+            border: 1px solid var(--naranja-borde);
+            border-left: 5px solid var(--naranja);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .evolucion-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .evolucion-header h4 {
+            margin: 0;
+        }
+
+        .leyenda-evolucion {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            font-size: 13px;
+            color: var(--texto);
+        }
+
+        .leyenda-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .punto-leyenda-naranja {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--naranja-oscuro);
+            display: inline-block;
+        }
+
+        .punto-leyenda-azul {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--azul);
+            border: 2px solid var(--blanco);
+            box-shadow: 0 0 0 1px var(--azul);
+            display: inline-block;
+        }
+
+        .svg-evolucion-wrapper {
+            width: 100%;
+            background-color: var(--blanco);
+            border: 1px solid var(--naranja-borde);
+            border-radius: 8px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .svg-evolucion {
+            width: 100%;
+            min-width: 460px;
+            height: 250px;
+            display: block;
         }
 
         .selector-simulacro {
@@ -350,6 +422,9 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
+            <!-- Gráfica de evolución siempre visible en resultados -->
+            <div id="evolucion-container"></div>
+
             <div class="selector-simulacro">
                 <label for="selectSimulacro">Selecciona el simulacro:</label>
                 <select id="selectSimulacro" onchange="mostrarSimulacroSeleccionado()">
@@ -364,6 +439,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzOoEEx8eXsnbW-lUros3DhpF4ZkAxM93WAf5HdMjbXsDinZ28FLks8q4cha7-TGyjy/exec";
         let datosGlobales = null;
+        let evolucionEstudiante = [];
 
         window.onload = async () => {
             try {
@@ -427,6 +503,22 @@
             }
         }
 
+        function calcularAciertosCsv(csvTexto) {
+            let aciertos = 0;
+            Papa.parse(csvTexto, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    results.data.forEach(fila => {
+                        if (String(fila['¿Acertó?'] || '').trim().toUpperCase() === 'TRUE') {
+                            aciertos++;
+                        }
+                    });
+                }
+            });
+            return aciertos;
+        }
+
         async function consultarDatos() {
             const semestre = document.getElementById('selectSemestre').value;
             const grupo = document.getElementById('selectGrupo').value;
@@ -446,6 +538,12 @@
                     return;
                 }
 
+                // Calcular puntaje (aciertos sobre 80) de cada simulacro realizado por el estudiante
+                evolucionEstudiante = (datosGlobales.simulacros || []).map(sim => ({
+                    num: sim.num,
+                    puntaje: calcularAciertosCsv(sim.csv)
+                }));
+
                 document.getElementById('seccion-seleccion').classList.add('oculto');
                 document.getElementById('seccion-resultados').classList.remove('oculto');
                 document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
@@ -457,15 +555,123 @@
                 });
 
                 document.getElementById('tabla-container').innerHTML = "";
+
+                // Dibujar gráfica de evolución desde el inicio (sin simulacro seleccionado aún)
+                renderizarGraficaEvolucion(null);
             } catch (e) {
                 alert("Error al conectar");
                 console.error(e);
             }
         }
 
+        function renderizarGraficaEvolucion(simulacroSeleccionadoNum) {
+            const evolContainer = document.getElementById('evolucion-container');
+
+            if (!evolucionEstudiante || evolucionEstudiante.length === 0) {
+                evolContainer.innerHTML = `
+                    <div class="evolucion-box">
+                        <h4>Evolución del Estudiante</h4>
+                        <p style="margin:0; color: var(--texto-suave);">No hay simulacros registrados para este estudiante.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const width = 760;
+            const height = 240;
+            const padLeft = 52;
+            const padRight = 28;
+            const padTop = 22;
+            const padBottom = 42;
+
+            const plotWidth = width - padLeft - padRight;
+            const plotHeight = height - padTop - padBottom;
+            const maxPuntaje = 80;
+
+            const getY = (puntaje) => {
+                const clamped = Math.max(0, Math.min(maxPuntaje, puntaje));
+                return padTop + plotHeight - (clamped / maxPuntaje) * plotHeight;
+            };
+
+            const getX = (index, total) => {
+                if (total === 1) return padLeft + plotWidth / 2;
+                return padLeft + (index / (total - 1)) * plotWidth;
+            };
+
+            // Líneas horizontales de 0 a 80 (cada 20 puntos)
+            const ticksY = [0, 20, 40, 60, 80];
+            let gridLines = "";
+            ticksY.forEach(val => {
+                const y = getY(val);
+                gridLines += `
+                    <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#fed7aa" stroke-dasharray="${val === 0 ? 'none' : '4,4'}" stroke-width="1" />
+                    <text x="${padLeft - 10}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6b7280" font-weight="600">${val}</text>
+                `;
+            });
+
+            // Puntos y línea de evolución
+            const puntosCoords = evolucionEstudiante.map((item, idx) => ({
+                x: getX(idx, evolucionEstudiante.length),
+                y: getY(item.puntaje),
+                num: item.num,
+                puntaje: item.puntaje
+            }));
+
+            let polylinePoints = puntosCoords.map(p => `${p.x},${p.y}`).join(" ");
+            let lineaEvolucion = puntosCoords.length > 1
+                ? `<polyline fill="none" stroke="#f97316" stroke-width="3" points="${polylinePoints}" />`
+                : "";
+
+            let elementosPuntos = "";
+            puntosCoords.forEach(p => {
+                const esSeleccionado = simulacroSeleccionadoNum !== null && String(p.num) === String(simulacroSeleccionadoNum);
+                const colorPunto = esSeleccionado ? "#2563eb" : "#ea580c";
+                const radioPunto = esSeleccionado ? 7 : 5;
+                const bordePunto = esSeleccionado ? "#ffffff" : "#ffffff";
+
+                elementosPuntos += `
+                    <line x1="${p.x}" y1="${padTop}" x2="${p.x}" y2="${padTop + plotHeight}" stroke="#fff7ed" stroke-width="1" />
+                    <circle cx="${p.x}" cy="${p.y}" r="${radioPunto}" fill="${colorPunto}" stroke="${bordePunto}" stroke-width="2">
+                        <title>Simulacro ${p.num}: ${p.puntaje} / 80</title>
+                    </circle>
+                    <text x="${p.x}" y="${p.y - (esSeleccionado ? 12 : 9)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">${p.puntaje}</text>
+                    <text x="${p.x}" y="${height - 12}" text-anchor="middle" font-size="12" font-weight="${esSeleccionado ? '700' : '600'}" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">Sim. ${p.num}</text>
+                `;
+            });
+
+            evolContainer.innerHTML = `
+                <div class="evolucion-box">
+                    <div class="evolucion-header">
+                        <h4>Evolución del Estudiante (Puntaje sobre 80)</h4>
+                        <div class="leyenda-evolucion">
+                            <span class="leyenda-item"><span class="punto-leyenda-naranja"></span> Simulacros realizados</span>
+                            <span class="leyenda-item"><span class="punto-leyenda-azul"></span> Simulacro seleccionado</span>
+                        </div>
+                    </div>
+                    <div class="svg-evolucion-wrapper">
+                        <svg class="svg-evolucion" viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfica de evolución de puntajes del estudiante">
+                            <!-- Ejes -->
+                            <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
+                            <line x1="${padLeft}" y1="${padTop + plotHeight}" x2="${width - padRight}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
+
+                            <!-- Etiqueta eje vertical -->
+                            <text x="15" y="${padTop + plotHeight / 2}" text-anchor="middle" font-size="12" font-weight="700" fill="#ea580c" transform="rotate(-90, 15, ${padTop + plotHeight / 2})">Puntaje (0 - 80)</text>
+
+                            ${gridLines}
+                            ${lineaEvolucion}
+                            ${elementosPuntos}
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }
+
         function mostrarSimulacroSeleccionado() {
             const numSim = document.getElementById('selectSimulacro').value;
             const container = document.getElementById('tabla-container');
+
+            // Actualizar gráfica manteniendo el punto azul en el simulacro elegido (o quitándolo si se limpia)
+            renderizarGraficaEvolucion(numSim ? numSim : null);
 
             if (!numSim) {
                 container.innerHTML = "";
@@ -503,7 +709,6 @@
                         if (acerto) totalAciertos++;
                     });
 
-                    // Cálculo de porcentajes para las alturas de las barras verticales
                     const pctCL = stats.CL.total > 0 ? ((stats.CL.aciertos / stats.CL.total) * 100).toFixed(1) : "0.0";
                     const pctRL = stats.RL.total > 0 ? ((stats.RL.aciertos / stats.RL.total) * 100).toFixed(1) : "0.0";
                     const pctTotal = totalPreguntas > 0 ? ((totalAciertos / totalPreguntas) * 100).toFixed(1) : "0.0";
@@ -512,7 +717,6 @@
                     htmlResumen += `<div class="resumen-box">`;
                     htmlResumen += `<div class="contenedor-graficos">`;
 
-                    // Gráfico 1: CL y RL (Sobre 40 cada uno)
                     htmlResumen += `
                         <div class="bloque-grafico">
                             <h5>Áreas Específicas (Sobre 40)</h5>
@@ -535,7 +739,6 @@
                         </div>
                     `;
 
-                    // Gráfico 2: Total General (Sobre 80)
                     htmlResumen += `
                         <div class="bloque-grafico">
                             <h5>Total General (Sobre 80)</h5>
@@ -608,7 +811,9 @@
             document.getElementById('seccion-seleccion').classList.remove('oculto');
             document.getElementById('selectEstudiante').value = '';
             document.getElementById('selectSimulacro').value = '';
+            document.getElementById('evolucion-container').innerHTML = "";
             document.getElementById('tabla-container').innerHTML = "";
+            evolucionEstudiante = [];
         }
     </script>
 </body>
