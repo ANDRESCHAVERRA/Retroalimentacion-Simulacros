@@ -25,7 +25,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- SELECCIÓN -->
         <div class="card" id="seccion-seleccion">
             <div class="card-header text-center py-3">
                 <h3 class="mb-0">🎓 Portal de Retroalimentación</h3>
@@ -51,7 +50,6 @@
             </div>
         </div>
 
-        <!-- RESULTADOS -->
         <div id="seccion-resultados" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 id="tituloEstudiante" class="mb-0 fw-bold text-dark">Resultados</h4>
@@ -98,14 +96,10 @@
 
             <div class="card">
                 <div class="card-header p-0 border-bottom-0">
-                    <ul class="nav nav-tabs" id="tabsSimulacros" role="tablist">
-                        <!-- Los tabs se generan aquí -->
-                    </ul>
+                    <ul class="nav nav-tabs" id="tabsSimulacros" role="tablist"></ul>
                 </div>
                 <div class="card-body">
-                    <div class="tab-content" id="tabContentSimulacros">
-                        <!-- El contenido se genera aquí -->
-                    </div>
+                    <div class="tab-content" id="tabContentSimulacros"></div>
                 </div>
             </div>
         </div>
@@ -163,7 +157,6 @@
 
             if (!semestre || !grupo || !estudiante) { alert("Selecciona todas las opciones."); return; }
 
-            // AQUÍ SE CAMBIA A LA NUEVA INTERFAZ
             document.getElementById('seccion-seleccion').style.display = 'none';
             document.getElementById('seccion-resultados').style.display = 'block';
             document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
@@ -181,12 +174,12 @@
                 const notaTxt = document.getElementById('notaFinal');
                 const accordionCarreras = document.getElementById('accordionCarreras');
 
+                // Para este paso, como el script no envía nota, mostrará "Pendiente"
                 if (datosGlobales.tipo_nota === "Real") {
                     tarjeta.style.backgroundColor = '#198754'; 
                     titulo.innerText = "Puntaje Real";
                     subtitulo.innerText = "Nota obtenida en el examen final";
                     notaTxt.innerText = datosGlobales.nota_final;
-                    if (accordionCarreras) accordionCarreras.style.display = 'none';
                 } else if (datosGlobales.tipo_nota === "Predicha") {
                     tarjeta.style.backgroundColor = '#0d6efd'; 
                     titulo.innerText = "Rango de Puntaje Predicho";
@@ -194,17 +187,14 @@
                     notaTxt.innerText = `[${datosGlobales.score_min} - ${datosGlobales.score_max}]`;
                     
                     if (datosGlobales.carreras && datosGlobales.carreras !== "Ninguna") {
-                        if (accordionCarreras) accordionCarreras.style.display = 'block';
+                        accordionCarreras.style.display = 'block';
                         document.getElementById('listaCarreras').innerText = datosGlobales.carreras;
-                    } else {
-                        if (accordionCarreras) accordionCarreras.style.display = 'none';
                     }
                 } else {
                     tarjeta.style.backgroundColor = '#6c757d'; 
                     titulo.innerText = "Puntaje Pendiente";
                     subtitulo.innerText = "Aún no hay predicción ni nota real";
                     notaTxt.innerText = "--";
-                    if (accordionCarreras) accordionCarreras.style.display = 'none';
                 }
 
                 // 2. Generar Tabs y contenido de simulacros
@@ -328,18 +318,6 @@
                 dataNotas.push(porcentaje);
             });
 
-            if (datosGlobales.tipo_nota === "Real") {
-                labels.push("Real");
-                dataNotas.push(parseFloat(datosGlobales.nota_final));
-            } else if (datosGlobales.tipo_nota === "Predicha") {
-                labels.push("Predicción");
-                const promedio = (parseFloat(datosGlobales.score_min) + parseFloat(datosGlobales.score_max)) / 2;
-                dataNotas.push(promedio);
-            }
-
-            const pointColors = dataNotas.map((_, i) => (i === dataNotas.length - 1 && datosGlobales.tipo_nota !== "Ninguna") ? '#dc3545' : '#0d6efd');
-            const pointSizes = dataNotas.map((_, i) => (i === dataNotas.length - 1 && datosGlobales.tipo_nota !== "Ninguna") ? 9 : 5);
-
             chartEvolucion = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -350,10 +328,10 @@
                         borderColor: '#0d6efd',
                         backgroundColor: 'rgba(13, 110, 253, 0.1)',
                         borderWidth: 3,
-                        pointBackgroundColor: pointColors,
-                        pointBorderColor: pointColors,
+                        pointBackgroundColor: '#0d6efd',
+                        pointBorderColor: '#0d6efd',
                         pointBorderWidth: 2,
-                        pointRadius: pointSizes,
+                        pointRadius: 5,
                         fill: true,
                         tension: 0.3
                     }]
