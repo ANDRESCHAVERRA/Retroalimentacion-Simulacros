@@ -21,6 +21,8 @@
             --verde-fila: #ecfdf5;
             --verde-borde: #a7f3d0;
             --verde-texto: #065f46;
+            --verde-card-bg: #f0fdf4;
+            --verde-card-border: #bbf7d0;
 
             --rojo-fila: #fef2f2;
             --rojo-borde: #fecaca;
@@ -146,13 +148,59 @@
             margin-bottom: 16px;
         }
 
+        /* Contenedor flexible para la gráfica y el recuadro verde de score final */
+        .area-superior-resultados {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+
         .evolucion-box {
+            flex: 3;
+            min-width: 500px;
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
             border-left: 5px solid var(--naranja);
             padding: 18px 20px;
-            margin-bottom: 20px;
             border-radius: 10px;
+        }
+
+        /* Recuadro verde para el Score Final UdeA */
+        .score-final-box {
+            flex: 1;
+            min-width: 220px;
+            background-color: var(--verde-card-bg);
+            border: 1px solid var(--verde-card-border);
+            border-left: 5px solid var(--verde-texto);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(6, 95, 70, 0.06);
+        }
+
+        .score-final-box h4 {
+            margin: 0 0 10px 0;
+            color: var(--verde-texto);
+            font-size: 1rem;
+        }
+
+        .score-valor {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--verde-texto);
+            margin: 5px 0;
+        }
+
+        .score-sub {
+            font-size: 12.5px;
+            color: #047857;
+            font-weight: 500;
         }
 
         .evolucion-header {
@@ -212,11 +260,10 @@
         .svg-evolucion {
             width: 100%;
             min-width: 460px;
-            height: 250px;
+            height: 230px;
             display: block;
         }
 
-        /* Estilo interactivo para los elementos clicables de la gráfica */
         .punto-grafica {
             cursor: pointer;
             transition: r 0.2s, fill 0.2s;
@@ -433,8 +480,11 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
-            <!-- Gráfica de evolución interactiva -->
-            <div id="evolucion-container"></div>
+            <!-- Área superior: Gráfica de evolución + Recuadro Score Final (si aplica) -->
+            <div class="area-superior-resultados">
+                <div id="evolucion-container"></div>
+                <div id="score-final-container"></div>
+            </div>
 
             <div class="selector-simulacro">
                 <label for="selectSimulacro">Selecciona el simulacro:</label>
@@ -451,6 +501,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzOoEEx8eXsnbW-lUros3DhpF4ZkAxM93WAf5HdMjbXsDinZ28FLks8q4cha7-TGyjy/exec";
         let datosGlobales = null;
         let evolucionEstudiante = [];
+        let scoreFinalEstudiante = null;
 
         window.onload = async () => {
             try {
@@ -485,9 +536,7 @@
                 const grupos = await res.json();
                 selectGrupo.innerHTML = '<option value="">Selecciona un grupo</option>';
                 grupos.forEach(g => selectGrupo.innerHTML += `<option value="${escaparHTML(g)}">${escaparHTML(g)}</option>`);
-            } catch (e) {
-                selectGrupo.innerHTML = '<option value="">Error</option>';
-            }
+            } catch (e) { selectGrupo.innerHTML = '<option value="">Error</option>'; }
         }
 
         async function cargarEstudiantes() {
@@ -509,9 +558,7 @@
                 const estudiantes = await res.json();
                 selectEst.innerHTML = '<option value="">Selecciona un estudiante</option>';
                 estudiantes.sort().forEach(e => selectEst.innerHTML += `<option value="${escaparHTML(e)}">${escaparHTML(e)}</option>`);
-            } catch (e) {
-                selectEst.innerHTML = '<option value="">Error</option>';
-            }
+            } catch (e) { selectEst.innerHTML = '<option value="">Error</option>'; }
         }
 
         function calcularAciertosCsv(csvTexto) {
@@ -554,6 +601,8 @@
                     puntaje: calcularAciertosCsv(sim.csv)
                 }));
 
+                scoreFinalEstudiante = datosGlobales.scoreFinal !== undefined ? datosGlobales.scoreFinal : null;
+
                 document.getElementById('seccion-seleccion').classList.add('oculto');
                 document.getElementById('seccion-resultados').classList.remove('oculto');
                 document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
@@ -566,9 +615,28 @@
 
                 document.getElementById('tabla-container').innerHTML = "";
                 renderizarGraficaEvolucion(null);
+                renderizarScoreFinal();
             } catch (e) {
                 alert("Error al conectar");
                 console.error(e);
+            }
+        }
+
+        function renderizarScoreFinal() {
+            const scoreContainer = document.getElementById('score-final-container');
+            const semestre = document.getElementById('selectSemestre').value;
+
+            // Mostrar el recuadro verde solo si es el semestre 2025-1 y el estudiante tiene puntaje
+            if (semestre === "2025-1" && scoreFinalEstudiante !== null && scoreFinalEstudiante !== "") {
+                scoreContainer.innerHTML = `
+                    <div class="score-final-box">
+                        <h4>Puntaje Examen Admisión UdeA</h4>
+                        <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
+                        <div class="score-sub">Score Final Obtenido</div>
+                    </div>
+                `;
+            } else {
+                scoreContainer.innerHTML = "";
             }
         }
 
@@ -585,12 +653,12 @@
                 return;
             }
 
-            const width = 760;
-            const height = 250;
-            const padLeft = 52;
-            const padRight = 28;
-            const padTop = 22;
-            const padBottom = 42;
+            const width = 640;
+            const height = 230;
+            const padLeft = 48;
+            const padRight = 24;
+            const padTop = 18;
+            const padBottom = 38;
 
             const plotWidth = width - padLeft - padRight;
             const plotHeight = height - padTop - padBottom;
@@ -612,7 +680,7 @@
                 const y = getY(val);
                 gridLines += `
                     <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#fed7aa" stroke-dasharray="${val === 0 ? 'none' : '4,4'}" stroke-width="1" />
-                    <text x="${padLeft - 10}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6b7280" font-weight="600">${val}</text>
+                    <text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#6b7280" font-weight="600">${val}</text>
                 `;
             });
 
@@ -632,16 +700,16 @@
             puntosCoords.forEach(p => {
                 const esSeleccionado = simulacroSeleccionadoNum !== null && String(p.num) === String(simulacroSeleccionadoNum);
                 const colorPunto = esSeleccionado ? "#2563eb" : "#ea580c";
-                const radioPunto = esSeleccionado ? 8 : 5.5;
+                const radioPunto = esSeleccionado ? 7.5 : 5;
 
                 elementosPuntos += `
                     <g class="elemento-clicable" onclick="seleccionarSimulacroPorNumero(${p.num})">
                         <line x1="${p.x}" y1="${padTop}" x2="${p.x}" y2="${padTop + plotHeight}" stroke="transparent" stroke-width="16" />
-                        <circle class="punto-grafica" cx="${p.x}" cy="${p.y}" r="${radioPunto}" fill="${colorPunto}" stroke="#ffffff" stroke-width="2.5">
-                            <title>Hacer clic para seleccionar Simulacro ${p.num} (${p.puntaje}/80)</title>
+                        <circle class="punto-grafica" cx="${p.x}" cy="${p.y}" r="${radioPunto}" fill="${colorPunto}" stroke="#ffffff" stroke-width="2">
+                            <title>Simulacro ${p.num}: ${p.puntaje}/80</title>
                         </circle>
-                        <text x="${p.x}" y="${p.y - (esSeleccionado ? 13 : 10)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">${p.puntaje}</text>
-                        <text x="${p.x}" y="${height - 12}" text-anchor="middle" font-size="12" font-weight="${esSeleccionado ? '700' : '600'}" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">Sim. ${p.num}</text>
+                        <text x="${p.x}" y="${p.y - (esSeleccionado ? 12 : 9)}" text-anchor="middle" font-size="11" font-weight="700" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">${p.puntaje}</text>
+                        <text x="${p.x}" y="${height - 10}" text-anchor="middle" font-size="11" font-weight="${esSeleccionado ? '700' : '600'}" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">Sim. ${p.num}</text>
                     </g>
                 `;
             });
@@ -649,17 +717,17 @@
             evolContainer.innerHTML = `
                 <div class="evolucion-box">
                     <div class="evolucion-header">
-                        <h4>Evolución del Estudiante (Haz clic en cualquier punto para consultarlo)</h4>
+                        <h4>Evolución (0 - 80)</h4>
                         <div class="leyenda-evolucion">
-                            <span class="leyenda-item"><span class="punto-leyenda-naranja"></span> Simulacros</span>
+                            <span class="leyenda-item"><span class="punto-leyenda-naranja"></span> Realizados</span>
                             <span class="leyenda-item"><span class="punto-leyenda-azul"></span> Seleccionado</span>
                         </div>
                     </div>
                     <div class="svg-evolucion-wrapper">
-                        <svg class="svg-evolucion" viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfica interactiva de evolución">
+                        <svg class="svg-evolucion" viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución">
                             <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
                             <line x1="${padLeft}" y1="${padTop + plotHeight}" x2="${width - padRight}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
-                            <text x="15" y="${padTop + plotHeight / 2}" text-anchor="middle" font-size="12" font-weight="700" fill="#ea580c" transform="rotate(-90, 15, ${padTop + plotHeight / 2})">Puntaje (0 - 80)</text>
+                            <text x="14" y="${padTop + plotHeight / 2}" text-anchor="middle" font-size="11" font-weight="700" fill="#ea580c" transform="rotate(-90, 14, ${padTop + plotHeight / 2})">Puntaje</text>
 
                             ${gridLines}
                             ${lineaEvolucion}
@@ -670,13 +738,11 @@
             `;
         }
 
-        // Función cuando se selecciona desde el menú desplegable <select>
         function seleccionarSimulacroDesdeUI() {
             const numSim = document.getElementById('selectSimulacro').value;
             mostrarSimulacroSeleccionadoLogica(numSim);
         }
 
-        // Función cuando se hace clic directo en el punto de la gráfica SVG
         function seleccionarSimulacroPorNumero(num) {
             const selectSim = document.getElementById('selectSimulacro');
             selectSim.value = num;
@@ -685,7 +751,6 @@
 
         function mostrarSimulacroSeleccionadoLogica(numSim) {
             const container = document.getElementById('tabla-container');
-
             renderizarGraficaEvolucion(numSim ? numSim : null);
 
             if (!numSim) {
@@ -828,8 +893,10 @@
             document.getElementById('selectEstudiante').value = '';
             document.getElementById('selectSimulacro').value = '';
             document.getElementById('evolucion-container').innerHTML = "";
+            document.getElementById('score-final-container').innerHTML = "";
             document.getElementById('tabla-container').innerHTML = "";
             evolucionEstudiante = [];
+            scoreFinalEstudiante = null;
         }
     </script>
 </body>
