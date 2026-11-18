@@ -170,7 +170,6 @@
                 complete: function(results) {
                     const datos = results.data;
 
-                    // Contadores específicos para CL y RL, además de cualquier otra área y el total
                     const stats = {
                         CL: { aciertos: 0, total: 0 },
                         RL: { aciertos: 0, total: 0 }
@@ -194,9 +193,10 @@
                         if (acerto) totalAciertos++;
                     });
 
+                    // Proporción afuera y solo el porcentaje entre paréntesis
                     const formatoProporcion = (aciertos, total) => {
                         const pct = total > 0 ? ((aciertos / total) * 100).toFixed(1) : "0.0";
-                        return `(${aciertos}/${total} - ${pct}%)`;
+                        return `${aciertos}/${total} (${pct}%)`;
                     };
 
                     let htmlResumen = `<h4>Resumen de Aciertos - Simulacro ${numSim}</h4>`;
@@ -204,7 +204,6 @@
                     htmlResumen += `<p><strong>CL:</strong> ${formatoProporcion(stats.CL.aciertos, stats.CL.total)}</p>`;
                     htmlResumen += `<p><strong>RL:</strong> ${formatoProporcion(stats.RL.aciertos, stats.RL.total)}</p>`;
 
-                    // Por si en algún simulacro aparece otra área distinta de CL y RL
                     Object.keys(stats).forEach(area => {
                         if (area !== 'CL' && area !== 'RL') {
                             htmlResumen += `<p><strong>${escaparHTML(area)}:</strong> ${formatoProporcion(stats[area].aciertos, stats[area].total)}</p>`;
