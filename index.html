@@ -22,7 +22,7 @@
             --verde-borde: #a7f3d0;
             --verde-texto: #065f46;
             --verde-card-bg: #f0fdf4;
-            --verde-card-border: #bbf7d0;
+            --verde-card-border: #86efac;
 
             --rojo-fila: #fef2f2;
             --rojo-borde: #fecaca;
@@ -157,8 +157,7 @@
         }
 
         .evolucion-box {
-            flex: 3;
-            min-width: 500px;
+            flex: 3 1 520px;
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
             border-left: 5px solid var(--naranja);
@@ -167,8 +166,7 @@
         }
 
         .score-final-box {
-            flex: 1;
-            min-width: 220px;
+            flex: 1 1 220px;
             background-color: var(--verde-card-bg);
             border: 1px solid var(--verde-card-border);
             border-left: 5px solid var(--verde-texto);
@@ -179,7 +177,7 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(6, 95, 70, 0.06);
+            box-shadow: 0 4px 12px rgba(6, 95, 70, 0.08);
         }
 
         .score-final-box h4 {
@@ -189,16 +187,16 @@
         }
 
         .score-valor {
-            font-size: 2.2rem;
+            font-size: 2.3rem;
             font-weight: 800;
             color: var(--verde-texto);
-            margin: 5px 0;
+            margin: 6px 0;
         }
 
         .score-sub {
-            font-size: 12.5px;
+            font-size: 13px;
             color: #047857;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .evolucion-header {
@@ -478,7 +476,7 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
-            <!-- Área superior: Gráfica de evolución + Recuadro Score Final (si aplica) -->
+            <!-- Área superior: Gráfica de evolución + Recuadro Score Final (2025-1) -->
             <div class="area-superior-resultados">
                 <div id="evolucion-container"></div>
                 <div id="score-final-container"></div>
@@ -622,14 +620,18 @@
 
         function renderizarScoreFinal() {
             const scoreContainer = document.getElementById('score-final-container');
-            const semestre = document.getElementById('selectSemestre').value;
+            const semestre = document.getElementById('selectSemestre').value.trim();
 
-            if (semestre === "2025-1" && scoreFinalEstudiante !== null && scoreFinalEstudiante !== "") {
+            if (semestre === "2025-1") {
+                const textoScore = (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "")
+                    ? escaparHTML(scoreFinalEstudiante)
+                    : "Sin registro";
+
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
-                        <h4>Puntaje Examen Admisión UdeA</h4>
-                        <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
-                        <div class="score-sub">Score Final Obtenido</div>
+                        <h4>Examen Admisión UdeA</h4>
+                        <div class="score-valor">${textoScore}</div>
+                        <div class="score-sub">SCORE_FINAL (2025-1)</div>
                     </div>
                 `;
             } else {
