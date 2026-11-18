@@ -11,6 +11,8 @@
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .resumen-box { background: #f9f9f9; padding: 14px; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 6px; }
+        .resumen-box p { margin: 6px 0; }
         .oculto { display: none; }
     </style>
 </head>
@@ -59,7 +61,7 @@
                 const semestres = await res.json();
                 const select = document.getElementById('selectSemestre');
                 select.innerHTML = '<option value="">Selecciona un semestre</option>';
-                semestres.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
+                semestres.forEach(s => select.innerHTML += `<option value="${escaparHTML(s)}">${escaparHTML(s)}</option>`);
             } catch (e) {
                 alert("Error cargando semestres");
             }
@@ -69,38 +71,50 @@
             const semestre = document.getElementById('selectSemestre').value;
             const selectGrupo = document.getElementById('selectGrupo');
             const selectEst = document.getElementById('selectEstudiante');
-            selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; 
+            selectEst.innerHTML = '<option value="">Selecciona un grupo</option>';
             selectEst.disabled = true;
-            
-            if (!semestre) { selectGrupo.innerHTML = '<option value="">Selecciona semestre</option>'; selectGrupo.disabled = true; return; }
-            
-            selectGrupo.innerHTML = '<option value="">Cargando...</option>'; 
+
+            if (!semestre) {
+                selectGrupo.innerHTML = '<option value="">Selecciona semestre</option>';
+                selectGrupo.disabled = true;
+                return;
+            }
+
+            selectGrupo.innerHTML = '<option value="">Cargando...</option>';
             selectGrupo.disabled = false;
-            
+
             try {
                 const res = await fetch(`${API_URL}?action=grupos&semestre=${encodeURIComponent(semestre)}`);
                 const grupos = await res.json();
                 selectGrupo.innerHTML = '<option value="">Selecciona un grupo</option>';
-                grupos.forEach(g => selectGrupo.innerHTML += `<option value="${g}">${g}</option>`);
-            } catch (e) { selectGrupo.innerHTML = '<option value="">Error</option>'; }
+                grupos.forEach(g => selectGrupo.innerHTML += `<option value="${escaparHTML(g)}">${escaparHTML(g)}</option>`);
+            } catch (e) {
+                selectGrupo.innerHTML = '<option value="">Error</option>';
+            }
         }
 
         async function cargarEstudiantes() {
             const semestre = document.getElementById('selectSemestre').value;
             const grupo = document.getElementById('selectGrupo').value;
             const selectEst = document.getElementById('selectEstudiante');
-            
-            if (!grupo) { selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; selectEst.disabled = true; return; }
-            
-            selectEst.innerHTML = '<option value="">Cargando...</option>'; 
+
+            if (!grupo) {
+                selectEst.innerHTML = '<option value="">Selecciona un grupo</option>';
+                selectEst.disabled = true;
+                return;
+            }
+
+            selectEst.innerHTML = '<option value="">Cargando...</option>';
             selectEst.disabled = false;
-            
+
             try {
                 const res = await fetch(`${API_URL}?action=estudiantes&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}`);
                 const estudiantes = await res.json();
                 selectEst.innerHTML = '<option value="">Selecciona un estudiante</option>';
-                estudiantes.sort().forEach(e => selectEst.innerHTML += `<option value="${e}">${e}</option>`);
-            } catch (e) { selectEst.innerHTML = '<option value="">Error</option>'; }
+                estudiantes.sort().forEach(e => selectEst.innerHTML += `<option value="${escaparHTML(e)}">${escaparHTML(e)}</option>`);
+            } catch (e) {
+                selectEst.innerHTML = '<option value="">Error</option>';
+            }
         }
 
         async function consultarDatos() {
@@ -108,13 +122,19 @@
             const grupo = document.getElementById('selectGrupo').value;
             const estudiante = document.getElementById('selectEstudiante').value;
 
-            if (!semestre || !grupo || !estudiante) { alert("Selecciona todas las opciones."); return; }
+            if (!semestre || !grupo || !estudiante) {
+                alert("Selecciona todas las opciones.");
+                return;
+            }
 
             try {
                 const res = await fetch(`${API_URL}?action=datos&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}&estudiante=${encodeURIComponent(estudiante)}`);
                 datosGlobales = await res.json();
 
-                if (datosGlobales.error) { alert(datosGlobales.error); return; }
+                if (datosGlobales.error) {
+                    alert(datosGlobales.error);
+                    return;
+                }
 
                 document.getElementById('seccion-seleccion').classList.add('oculto');
                 document.getElementById('seccion-resultados').classList.remove('oculto');
@@ -127,29 +147,75 @@
                 });
 
                 document.getElementById('tabla-container').innerHTML = "";
-
-            } catch (e) { 
-                alert("Error al conectar"); 
-                console.error(e); 
+            } catch (e) {
+                alert("Error al conectar");
+                console.error(e);
             }
         }
 
         function mostrarSimulacroSeleccionado() {
             const numSim = document.getElementById('selectSimulacro').value;
+            const container = document.getElementById('tabla-container');
+
             if (!numSim) {
-                document.getElementById('tabla-container').innerHTML = "";
+                container.innerHTML = "";
                 return;
             }
 
             const simEncontrado = datosGlobales.simulacros.find(s => s.num == numSim);
-            
+
             Papa.parse(simEncontrado.csv, {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
                     const datos = results.data;
-                    let html = `<h4>Resultados del Simulacro ${numSim}</h4>`;
-                    html += `<table>
+
+                    // Contadores específicos para CL y RL, además de cualquier otra área y el total
+                    const stats = {
+                        CL: { aciertos: 0, total: 0 },
+                        RL: { aciertos: 0, total: 0 }
+                    };
+                    let totalAciertos = 0;
+                    let totalPreguntas = 0;
+
+                    datos.forEach(fila => {
+                        const area = (fila['Área'] || '').trim().toUpperCase();
+                        const acerto = String(fila['¿Acertó?'] || '').trim().toUpperCase() === 'TRUE';
+
+                        if (area) {
+                            if (!stats[area]) {
+                                stats[area] = { aciertos: 0, total: 0 };
+                            }
+                            stats[area].total++;
+                            if (acerto) stats[area].aciertos++;
+                        }
+
+                        totalPreguntas++;
+                        if (acerto) totalAciertos++;
+                    });
+
+                    const formatoProporcion = (aciertos, total) => {
+                        const pct = total > 0 ? ((aciertos / total) * 100).toFixed(1) : "0.0";
+                        return `(${aciertos}/${total} - ${pct}%)`;
+                    };
+
+                    let htmlResumen = `<h4>Resumen de Aciertos - Simulacro ${numSim}</h4>`;
+                    htmlResumen += `<div class="resumen-box">`;
+                    htmlResumen += `<p><strong>CL:</strong> ${formatoProporcion(stats.CL.aciertos, stats.CL.total)}</p>`;
+                    htmlResumen += `<p><strong>RL:</strong> ${formatoProporcion(stats.RL.aciertos, stats.RL.total)}</p>`;
+
+                    // Por si en algún simulacro aparece otra área distinta de CL y RL
+                    Object.keys(stats).forEach(area => {
+                        if (area !== 'CL' && area !== 'RL') {
+                            htmlResumen += `<p><strong>${escaparHTML(area)}:</strong> ${formatoProporcion(stats[area].aciertos, stats[area].total)}</p>`;
+                        }
+                    });
+
+                    htmlResumen += `<p><strong>Total (CL + RL):</strong> ${formatoProporcion(totalAciertos, totalPreguntas)}</p>`;
+                    htmlResumen += `</div>`;
+
+                    let htmlTabla = `<h4>Detalle de Preguntas</h4>`;
+                    htmlTabla += `<table>
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -162,12 +228,12 @@
                             </tr>
                         </thead>
                         <tbody>`;
-                    
+
                     datos.forEach(fila => {
                         const acerto = String(fila['¿Acertó?'] || '').trim().toUpperCase() === 'TRUE';
                         const solucionario = fila['Solucionario'] || '';
-                        
-                        html += `<tr>
+
+                        htmlTabla += `<tr>
                             <td>${escaparHTML(fila['# Pregunta'])}</td>
                             <td>${escaparHTML(fila['Área'])}</td>
                             <td>${escaparHTML(fila['Nivel'])}</td>
@@ -177,9 +243,9 @@
                             <td>${escaparHTML(solucionario)}</td>
                         </tr>`;
                     });
-                    
-                    html += `</tbody></table>`;
-                    document.getElementById('tabla-container').innerHTML = html;
+
+                    htmlTabla += `</tbody></table>`;
+                    container.innerHTML = htmlResumen + htmlTabla;
                 }
             });
         }
