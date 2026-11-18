@@ -1,95 +1,183 @@
-const ROOT_RETROALIMENTACION = "1fHWBgM1j8cKPY5z248dTNfGpMHH3U6Dw"; 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retroalimentación Simple</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        select, button { padding: 10px; margin: 5px; font-size: 16px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .oculto { display: none; }
+    </style>
+</head>
+<body>
 
-function limpiar(txt) {
-  if (!txt) return "";
-  return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\s_]/g, "");
-}
+    <h2>Consulta de Retroalimentación</h2>
 
-function doGet(e) {
-  const action = e.parameter.action;
-  
-  try {
-    const rootFolder = DriveApp.getFolderById(ROOT_RETROALIMENTACION);
-
-    if (action === "semestres") {
-      const folders = rootFolder.getFolders();
-      let lista = [];
-      while (folders.hasNext()) lista.push(folders.next().getName());
-      return ContentService.createTextOutput(JSON.stringify(lista)).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    if (action === "grupos") {
-      const semestreFolder = getFolderByName(rootFolder, e.parameter.semestre);
-      if (!semestreFolder) return errorJSON("Semestre no encontrado");
-      const folders = semestreFolder.getFolders();
-      let lista = [];
-      while (folders.hasNext()) lista.push(folders.next().getName());
-      return ContentService.createTextOutput(JSON.stringify(lista)).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    if (action === "estudiantes") {
-      const grupoFolder = getGrupoFolder(rootFolder, e.parameter.semestre, e.parameter.grupo);
-      if (!grupoFolder) return errorJSON("Grupo no encontrado");
-      const files = grupoFolder.getFiles();
-      let setEstudiantes = new Set();
-      while (files.hasNext()) {
-        const nombre = files.next().getName();
-        if (nombre.toLowerCase().includes("retroalimentacion")) {
-          setEstudiantes.add(nombre.split('-Simulacro')[0].replace(/_/g, " "));
-        }
-      }
-      return ContentService.createTextOutput(JSON.stringify(Array.from(setEstudiantes))).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    if (action === "datos") {
-      const semestre = e.parameter.semestre;
-      const grupo = e.parameter.grupo;
-      const estudiante = e.parameter.estudiante;
-      const nombreBuscado = limpiar(estudiante);
-      
-      const grupoFolderRetro = getGrupoFolder(rootFolder, semestre, grupo);
-      const filesRetro = grupoFolderRetro.getFiles();
-      let simulacrosData = [];
-      
-      while (filesRetro.hasNext()) {
-        const f = filesRetro.next();
-        const nombreArchivo = f.getName();
+    <!-- Selectores -->
+    <div id="seccion-seleccion">
+        <select id="selectSemestre" onchange="cargarGrupos()">
+            <option value="">Cargando semestres...</option>
+        </select>
         
-        if (limpiar(nombreArchivo).includes(nombreBuscado) && nombreArchivo.includes("-Simulacro_")) {
-          const match = nombreArchivo.match(/-Simulacro_(\d+)-/);
-          if (match) {
-            simulacrosData.push({
-              num: parseInt(match[1]),
-              csv: f.getBlob().getDataAsString("UTF-8")
-            });
-          }
+        <select id="selectGrupo" onchange="cargarEstudiantes()" disabled>
+            <option value="">Selecciona un semestre</option>
+        </select>
+        
+        <select id="selectEstudiante" disabled>
+            <option value="">Selecciona un grupo</option>
+        </select>
+        
+        <button onclick="consultarDatos()">Ver Retroalimentación</button>
+    </div>
+
+    <!-- Resultados -->
+    <div id="seccion-resultados" class="oculto">
+        <h3 id="tituloEstudiante"></h3>
+        <button onclick="volver()">← Volver</button>
+        
+        <br><br>
+        <label>Selecciona el simulacro: </label>
+        <select id="selectSimulacro" onchange="mostrarSimulacroSeleccionado()">
+            <option value="">Selecciona un simulacro</option>
+        </select>
+
+        <div id="tabla-container"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzOoEEx8eXsnbW-lUros3DhpF4ZkAxM93WAf5HdMjbXsDinZ28FLks8q4cha7-TGyjy/exec";
+        let datosGlobales = null;
+
+        window.onload = async () => {
+            try {
+                const res = await fetch(`${API_URL}?action=semestres`);
+                const semestres = await res.json();
+                const select = document.getElementById('selectSemestre');
+                select.innerHTML = '<option value="">Selecciona un semestre</option>';
+                semestres.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
+            } catch (e) {
+                alert("Error cargando semestres");
+            }
+        };
+
+        async function cargarGrupos() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const selectGrupo = document.getElementById('selectGrupo');
+            const selectEst = document.getElementById('selectEstudiante');
+            selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; 
+            selectEst.disabled = true;
+            
+            if (!semestre) { selectGrupo.innerHTML = '<option value="">Selecciona semestre</option>'; selectGrupo.disabled = true; return; }
+            
+            selectGrupo.innerHTML = '<option value="">Cargando...</option>'; 
+            selectGrupo.disabled = false;
+            
+            try {
+                const res = await fetch(`${API_URL}?action=grupos&semestre=${encodeURIComponent(semestre)}`);
+                const grupos = await res.json();
+                selectGrupo.innerHTML = '<option value="">Selecciona un grupo</option>';
+                grupos.forEach(g => selectGrupo.innerHTML += `<option value="${g}">${g}</option>`);
+            } catch (e) { selectGrupo.innerHTML = '<option value="">Error</option>'; }
         }
-      }
-      simulacrosData.sort((a, b) => a.num - b.num);
-      return ContentService.createTextOutput(JSON.stringify({ simulacros: simulacrosData })).setMimeType(ContentService.MimeType.JSON);
-    }
 
-    return errorJSON("Acción no válida");
-  } catch (error) {
-    return errorJSON(error.toString());
-  }
-}
+        async function cargarEstudiantes() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const grupo = document.getElementById('selectGrupo').value;
+            const selectEst = document.getElementById('selectEstudiante');
+            
+            if (!grupo) { selectEst.innerHTML = '<option value="">Selecciona un grupo</option>'; selectEst.disabled = true; return; }
+            
+            selectEst.innerHTML = '<option value="">Cargando...</option>'; 
+            selectEst.disabled = false;
+            
+            try {
+                const res = await fetch(`${API_URL}?action=estudiantes&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}`);
+                const estudiantes = await res.json();
+                selectEst.innerHTML = '<option value="">Selecciona un estudiante</option>';
+                estudiantes.sort().forEach(e => selectEst.innerHTML += `<option value="${e}">${e}</option>`);
+            } catch (e) { selectEst.innerHTML = '<option value="">Error</option>'; }
+        }
 
-function getFolderByName(parentFolder, name) {
-  const folders = parentFolder.getFolders();
-  while (folders.hasNext()) {
-    const folder = folders.next();
-    if (folder.getName().toLowerCase() === name.toLowerCase()) return folder;
-  }
-  return null;
-}
+        async function consultarDatos() {
+            const semestre = document.getElementById('selectSemestre').value;
+            const grupo = document.getElementById('selectGrupo').value;
+            const estudiante = document.getElementById('selectEstudiante').value;
 
-function getGrupoFolder(rootFolder, semestre, grupo) {
-  const semestreFolder = getFolderByName(rootFolder, semestre);
-  if (!semestreFolder) return null;
-  return getFolderByName(semestreFolder, grupo);
-}
+            if (!semestre || !grupo || !estudiante) { alert("Selecciona todas las opciones."); return; }
 
-function errorJSON(msg) {
-  return ContentService.createTextOutput(JSON.stringify({ error: msg })).setMimeType(ContentService.MimeType.JSON);
-}
+            try {
+                const res = await fetch(`${API_URL}?action=datos&semestre=${encodeURIComponent(semestre)}&grupo=${encodeURIComponent(grupo)}&estudiante=${encodeURIComponent(estudiante)}`);
+                datosGlobales = await res.json();
+
+                if (datosGlobales.error) { alert(datosGlobales.error); return; }
+
+                // Cambiar de interfaz
+                document.getElementById('seccion-seleccion').classList.add('oculto');
+                document.getElementById('seccion-resultados').classList.remove('oculto');
+                document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
+
+                // Llenar el selector de simulacros
+                const selectSim = document.getElementById('selectSimulacro');
+                selectSim.innerHTML = '<option value="">Selecciona un simulacro</option>';
+                datosGlobales.simulacros.forEach(sim => {
+                    selectSim.innerHTML += `<option value="${sim.num}">Simulacro ${sim.num}</option>`;
+                });
+
+                // Limpiar tabla
+                document.getElementById('tabla-container').innerHTML = "";
+
+            } catch (e) { 
+                alert("Error al conectar"); 
+                console.error(e); 
+            }
+        }
+
+        function mostrarSimulacroSeleccionado() {
+            const numSim = document.getElementById('selectSimulacro').value;
+            if (!numSim) {
+                document.getElementById('tabla-container').innerHTML = "";
+                return;
+            }
+
+            const simEncontrado = datosGlobales.simulacros.find(s => s.num == numSim);
+            
+            Papa.parse(simEncontrado.csv, {
+                header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    const datos = results.data;
+                    let html = `<h4>Aciertos en el Simulacro ${numSim}</h4>`;
+                    html += `<table><thead><tr><th>#</th><th>Área</th><th>Nivel</th><th>Respuesta</th><th>Correcta</th><th>¿Acertó?</th></tr></thead><tbody>`;
+                    
+                    datos.forEach(fila => {
+                        const acerto = fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true');
+                        html += `<tr>
+                            <td>${fila['# Pregunta'] || ''}</td>
+                            <td>${fila['Área'] || ''}</td>
+                            <td>${fila['Nivel'] || ''}</td>
+                            <td>${fila['Respuesta del estudiante'] || ''}</td>
+                            <td>${fila['Opción Correcta'] || ''}</td>
+                            <td>${acerto ? 'Sí' : 'No'}</td>
+                        </tr>`;
+                    });
+                    
+                    html += `</tbody></table>`;
+                    document.getElementById('tabla-container').innerHTML = html;
+                }
+            });
+        }
+
+        function volver() {
+            document.getElementById('seccion-resultados').classList.add('oculto');
+            document.getElementById('seccion-seleccion').classList.remove('oculto');
+            document.getElementById('selectEstudiante').value = '';
+            document.getElementById('selectSimulacro').value = '';
+            document.getElementById('tabla-container').innerHTML = "";
+        }
+    </script>
+</body>
+</html>
