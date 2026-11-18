@@ -146,7 +146,6 @@
             margin-bottom: 16px;
         }
 
-        /* Gráfica de evolución del estudiante */
         .evolucion-box {
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
@@ -217,6 +216,19 @@
             display: block;
         }
 
+        /* Estilo interactivo para los elementos clicables de la gráfica */
+        .punto-grafica {
+            cursor: pointer;
+            transition: r 0.2s, fill 0.2s;
+        }
+        .punto-grafica:hover {
+            r: 8.5px;
+            fill: var(--azul);
+        }
+        .elemento-clicable {
+            cursor: pointer;
+        }
+
         .selector-simulacro {
             display: flex;
             flex-wrap: wrap;
@@ -234,7 +246,6 @@
             color: var(--naranja-oscuro);
         }
 
-        /* Estilos de la caja de resumen y gráficos verticales */
         .resumen-box {
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
@@ -422,12 +433,12 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
-            <!-- Gráfica de evolución siempre visible en resultados -->
+            <!-- Gráfica de evolución interactiva -->
             <div id="evolucion-container"></div>
 
             <div class="selector-simulacro">
                 <label for="selectSimulacro">Selecciona el simulacro:</label>
-                <select id="selectSimulacro" onchange="mostrarSimulacroSeleccionado()">
+                <select id="selectSimulacro" onchange="seleccionarSimulacroDesdeUI()">
                     <option value="">Selecciona un simulacro</option>
                 </select>
             </div>
@@ -538,7 +549,6 @@
                     return;
                 }
 
-                // Calcular puntaje (aciertos sobre 80) de cada simulacro realizado por el estudiante
                 evolucionEstudiante = (datosGlobales.simulacros || []).map(sim => ({
                     num: sim.num,
                     puntaje: calcularAciertosCsv(sim.csv)
@@ -555,8 +565,6 @@
                 });
 
                 document.getElementById('tabla-container').innerHTML = "";
-
-                // Dibujar gráfica de evolución desde el inicio (sin simulacro seleccionado aún)
                 renderizarGraficaEvolucion(null);
             } catch (e) {
                 alert("Error al conectar");
@@ -578,7 +586,7 @@
             }
 
             const width = 760;
-            const height = 240;
+            const height = 250;
             const padLeft = 52;
             const padRight = 28;
             const padTop = 22;
@@ -598,7 +606,6 @@
                 return padLeft + (index / (total - 1)) * plotWidth;
             };
 
-            // Líneas horizontales de 0 a 80 (cada 20 puntos)
             const ticksY = [0, 20, 40, 60, 80];
             let gridLines = "";
             ticksY.forEach(val => {
@@ -609,7 +616,6 @@
                 `;
             });
 
-            // Puntos y línea de evolución
             const puntosCoords = evolucionEstudiante.map((item, idx) => ({
                 x: getX(idx, evolucionEstudiante.length),
                 y: getY(item.puntaje),
@@ -626,35 +632,33 @@
             puntosCoords.forEach(p => {
                 const esSeleccionado = simulacroSeleccionadoNum !== null && String(p.num) === String(simulacroSeleccionadoNum);
                 const colorPunto = esSeleccionado ? "#2563eb" : "#ea580c";
-                const radioPunto = esSeleccionado ? 7 : 5;
-                const bordePunto = esSeleccionado ? "#ffffff" : "#ffffff";
+                const radioPunto = esSeleccionado ? 8 : 5.5;
 
                 elementosPuntos += `
-                    <line x1="${p.x}" y1="${padTop}" x2="${p.x}" y2="${padTop + plotHeight}" stroke="#fff7ed" stroke-width="1" />
-                    <circle cx="${p.x}" cy="${p.y}" r="${radioPunto}" fill="${colorPunto}" stroke="${bordePunto}" stroke-width="2">
-                        <title>Simulacro ${p.num}: ${p.puntaje} / 80</title>
-                    </circle>
-                    <text x="${p.x}" y="${p.y - (esSeleccionado ? 12 : 9)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">${p.puntaje}</text>
-                    <text x="${p.x}" y="${height - 12}" text-anchor="middle" font-size="12" font-weight="${esSeleccionado ? '700' : '600'}" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">Sim. ${p.num}</text>
+                    <g class="elemento-clicable" onclick="seleccionarSimulacroPorNumero(${p.num})">
+                        <line x1="${p.x}" y1="${padTop}" x2="${p.x}" y2="${padTop + plotHeight}" stroke="transparent" stroke-width="16" />
+                        <circle class="punto-grafica" cx="${p.x}" cy="${p.y}" r="${radioPunto}" fill="${colorPunto}" stroke="#ffffff" stroke-width="2.5">
+                            <title>Hacer clic para seleccionar Simulacro ${p.num} (${p.puntaje}/80)</title>
+                        </circle>
+                        <text x="${p.x}" y="${p.y - (esSeleccionado ? 13 : 10)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">${p.puntaje}</text>
+                        <text x="${p.x}" y="${height - 12}" text-anchor="middle" font-size="12" font-weight="${esSeleccionado ? '700' : '600'}" fill="${esSeleccionado ? '#2563eb' : '#1f2937'}">Sim. ${p.num}</text>
+                    </g>
                 `;
             });
 
             evolContainer.innerHTML = `
                 <div class="evolucion-box">
                     <div class="evolucion-header">
-                        <h4>Evolución del Estudiante (Puntaje sobre 80)</h4>
+                        <h4>Evolución del Estudiante (Haz clic en cualquier punto para consultarlo)</h4>
                         <div class="leyenda-evolucion">
-                            <span class="leyenda-item"><span class="punto-leyenda-naranja"></span> Simulacros realizados</span>
-                            <span class="leyenda-item"><span class="punto-leyenda-azul"></span> Simulacro seleccionado</span>
+                            <span class="leyenda-item"><span class="punto-leyenda-naranja"></span> Simulacros</span>
+                            <span class="leyenda-item"><span class="punto-leyenda-azul"></span> Seleccionado</span>
                         </div>
                     </div>
                     <div class="svg-evolucion-wrapper">
-                        <svg class="svg-evolucion" viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfica de evolución de puntajes del estudiante">
-                            <!-- Ejes -->
+                        <svg class="svg-evolucion" viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfica interactiva de evolución">
                             <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
                             <line x1="${padLeft}" y1="${padTop + plotHeight}" x2="${width - padRight}" y2="${padTop + plotHeight}" stroke="#ea580c" stroke-width="2" />
-
-                            <!-- Etiqueta eje vertical -->
                             <text x="15" y="${padTop + plotHeight / 2}" text-anchor="middle" font-size="12" font-weight="700" fill="#ea580c" transform="rotate(-90, 15, ${padTop + plotHeight / 2})">Puntaje (0 - 80)</text>
 
                             ${gridLines}
@@ -666,11 +670,22 @@
             `;
         }
 
-        function mostrarSimulacroSeleccionado() {
+        // Función cuando se selecciona desde el menú desplegable <select>
+        function seleccionarSimulacroDesdeUI() {
             const numSim = document.getElementById('selectSimulacro').value;
+            mostrarSimulacroSeleccionadoLogica(numSim);
+        }
+
+        // Función cuando se hace clic directo en el punto de la gráfica SVG
+        function seleccionarSimulacroPorNumero(num) {
+            const selectSim = document.getElementById('selectSimulacro');
+            selectSim.value = num;
+            mostrarSimulacroSeleccionadoLogica(num);
+        }
+
+        function mostrarSimulacroSeleccionadoLogica(numSim) {
             const container = document.getElementById('tabla-container');
 
-            // Actualizar gráfica manteniendo el punto azul en el simulacro elegido (o quitándolo si se limpia)
             renderizarGraficaEvolucion(numSim ? numSim : null);
 
             if (!numSim) {
@@ -679,6 +694,7 @@
             }
 
             const simEncontrado = datosGlobales.simulacros.find(s => s.num == numSim);
+            if (!simEncontrado) return;
 
             Papa.parse(simEncontrado.csv, {
                 header: true,
