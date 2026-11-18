@@ -25,7 +25,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- SECCIÓN DE SELECCIÓN INICIAL -->
+        <!-- SELECCIÓN -->
         <div class="card" id="seccion-seleccion">
             <div class="card-header text-center py-3">
                 <h3 class="mb-0">🎓 Portal de Retroalimentación</h3>
@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DE RESULTADOS -->
+        <!-- RESULTADOS -->
         <div id="seccion-resultados" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 id="tituloEstudiante" class="mb-0 fw-bold text-dark">Resultados</h4>
@@ -59,7 +59,6 @@
             </div>
 
             <div class="row mb-3">
-                <!-- Gráfico de Evolución -->
                 <div class="col-md-7">
                     <div class="card h-100 mb-0">
                         <div class="card-header fw-bold">📈 Evolución Histórica</div>
@@ -68,7 +67,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Tarjeta de Nota y Carreras -->
                 <div class="col-md-5">
                     <div class="card h-100 mb-0">
                         <div class="card-header fw-bold">Puntaje Final</div>
@@ -100,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- Navegación por Simulacros (Tabs) -->
+            <!-- Pestañas de Simulacros -->
             <div class="card">
                 <div class="card-header p-0 border-bottom-0">
                     <ul class="nav nav-tabs" id="tabsSimulacros" role="tablist">
@@ -183,38 +181,39 @@
                 const titulo = document.getElementById('tituloNota');
                 const subtitulo = document.getElementById('subtituloNota');
                 const notaTxt = document.getElementById('notaFinal');
-                const accordion = document.getElementById('accordionCarreras');
+                const accordionCarreras = document.getElementById('accordionCarreras'); // CORREGIDO
 
                 if (datosGlobales.tipo_nota === "Real") {
                     tarjeta.style.backgroundColor = '#198754'; 
                     titulo.innerText = "Puntaje Real";
                     subtitulo.innerText = "Nota obtenida en el examen final";
                     notaTxt.innerText = datosGlobales.nota_final;
-                    accordion.style.display = 'none';
+                    if (accordionCarreras) accordionCarreras.style.display = 'none';
                 } else if (datosGlobales.tipo_nota === "Predicha") {
                     tarjeta.style.backgroundColor = '#0d6efd'; 
                     titulo.innerText = "Rango de Puntaje Predicho";
-                    subtitulo.innerText = "Basado en Machine Learning";
+                    subtitulo.innerText = "Basado en el modelo predictivo";
                     notaTxt.innerText = `[${datosGlobales.score_min} - ${datosGlobales.score_max}]`;
                     
+                    // Mostrar carreras si existen
                     if (datosGlobales.carreras && datosGlobales.carreras !== "Ninguna") {
-                        accordion.style.display = 'block';
+                        if (accordionCarreras) accordionCarreras.style.display = 'block';
                         document.getElementById('listaCarreras').innerText = datosGlobales.carreras;
                     } else {
-                        accordion.style.display = 'none';
+                        if (accordionCarreras) accordionCarreras.style.display = 'none';
                     }
                 } else {
                     tarjeta.style.backgroundColor = '#6c757d'; 
                     titulo.innerText = "Puntaje Pendiente";
                     subtitulo.innerText = "Aún no hay predicción ni nota real";
                     notaTxt.innerText = "--";
-                    accordion.style.display = 'none';
+                    if (accordionCarreras) accordionCarreras.style.display = 'none';
                 }
 
                 // 2. Generar Tabs y contenido de simulacros
                 generarInterfazSimulacros(datosGlobales.simulacros);
 
-                // 3. Generar Gráfico de Evolución (con las notas de los simulacros)
+                // 3. Generar Gráfico de Evolución
                 generarGraficoEvolucion(datosGlobales.simulacros);
 
             } catch (e) { alert("Error al conectar"); console.error(e); volver(); }
@@ -300,7 +299,6 @@
                     </tr>`;
             });
 
-            // Gráfico de barras por área para este simulacro
             const ctx = document.getElementById(`graficoAreas-${numSim}`).getContext('2d');
             const labels = Object.keys(areasStats);
             const dataAciertos = labels.map(l => areasStats[l].aciertos);
@@ -323,12 +321,10 @@
             const ctx = document.getElementById('graficoEvolucion').getContext('2d');
             if (chartEvolucion) chartEvolucion.destroy();
 
-            // Extraer la nota de cada simulacro (calculada como el porcentaje de aciertos)
             const labels = [];
             const dataNotas = [];
 
             simulacros.forEach(sim => {
-                // Parsear rápido para contar aciertos
                 const filas = Papa.parse(sim.csv, { header: true, skipEmptyLines: true }).data;
                 let aciertos = 0;
                 filas.forEach(f => { if (f['¿Acertó?'] && f['¿Acertó?'].toLowerCase().includes('true')) aciertos++; });
@@ -338,7 +334,6 @@
                 dataNotas.push(porcentaje);
             });
 
-            // Si hay nota final (Real o Predicha), agregarla al final
             if (datosGlobales.tipo_nota === "Real") {
                 labels.push("Real");
                 dataNotas.push(parseFloat(datosGlobales.nota_final));
