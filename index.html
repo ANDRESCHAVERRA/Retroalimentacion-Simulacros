@@ -116,19 +116,16 @@
 
                 if (datosGlobales.error) { alert(datosGlobales.error); return; }
 
-                // Cambiar de interfaz
                 document.getElementById('seccion-seleccion').classList.add('oculto');
                 document.getElementById('seccion-resultados').classList.remove('oculto');
                 document.getElementById('tituloEstudiante').innerText = `Resultados: ${estudiante}`;
 
-                // Llenar el selector de simulacros
                 const selectSim = document.getElementById('selectSimulacro');
                 selectSim.innerHTML = '<option value="">Selecciona un simulacro</option>';
                 datosGlobales.simulacros.forEach(sim => {
                     selectSim.innerHTML += `<option value="${sim.num}">Simulacro ${sim.num}</option>`;
                 });
 
-                // Limpiar tabla
                 document.getElementById('tabla-container').innerHTML = "";
 
             } catch (e) { 
@@ -147,21 +144,37 @@
             const simEncontrado = datosGlobales.simulacros.find(s => s.num == numSim);
             
             Papa.parse(simEncontrado.csv, {
-                header: true, skipEmptyLines: true,
+                header: true,
+                skipEmptyLines: true,
                 complete: function(results) {
                     const datos = results.data;
-                    let html = `<h4>Aciertos en el Simulacro ${numSim}</h4>`;
-                    html += `<table><thead><tr><th>#</th><th>Área</th><th>Nivel</th><th>Respuesta</th><th>Correcta</th><th>¿Acertó?</th></tr></thead><tbody>`;
+                    let html = `<h4>Resultados del Simulacro ${numSim}</h4>`;
+                    html += `<table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Área</th>
+                                <th>Nivel</th>
+                                <th>Respuesta</th>
+                                <th>Correcta</th>
+                                <th>¿Acertó?</th>
+                                <th>Solucionario</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
                     
                     datos.forEach(fila => {
-                        const acerto = fila['¿Acertó?'] && fila['¿Acertó?'].toLowerCase().includes('true');
+                        const acerto = String(fila['¿Acertó?'] || '').trim().toUpperCase() === 'TRUE';
+                        const solucionario = fila['Solucionario'] || '';
+                        
                         html += `<tr>
-                            <td>${fila['# Pregunta'] || ''}</td>
-                            <td>${fila['Área'] || ''}</td>
-                            <td>${fila['Nivel'] || ''}</td>
-                            <td>${fila['Respuesta del estudiante'] || ''}</td>
-                            <td>${fila['Opción Correcta'] || ''}</td>
+                            <td>${escaparHTML(fila['# Pregunta'])}</td>
+                            <td>${escaparHTML(fila['Área'])}</td>
+                            <td>${escaparHTML(fila['Nivel'])}</td>
+                            <td>${escaparHTML(fila['Respuesta del estudiante'])}</td>
+                            <td>${escaparHTML(fila['Opción Correcta'])}</td>
                             <td>${acerto ? 'Sí' : 'No'}</td>
+                            <td>${escaparHTML(solucionario)}</td>
                         </tr>`;
                     });
                     
@@ -169,6 +182,16 @@
                     document.getElementById('tabla-container').innerHTML = html;
                 }
             });
+        }
+
+        function escaparHTML(texto) {
+            const limpio = String(texto || '').trim();
+            if (!limpio) return '-';
+            return limpio
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
         }
 
         function volver() {
