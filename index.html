@@ -162,22 +162,51 @@
             color: var(--naranja-oscuro);
         }
 
+        /* Estilos de la caja de resumen y barras de progreso */
         .resumen-box {
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
             border-left: 5px solid var(--naranja);
-            padding: 14px 18px;
-            margin-bottom: 22px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
             border-radius: 8px;
         }
 
-        .resumen-box p {
-            margin: 7px 0;
-            font-size: 15px;
+        .item-estadistica {
+            margin-bottom: 14px;
         }
 
-        .resumen-box strong {
+        .item-estadistica:last-child {
+            margin-bottom: 0;
+            padding-top: 6px;
+            border-top: 1px dashed var(--naranja-borde);
+        }
+
+        .info-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14.5px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .info-stat strong {
             color: var(--naranja-oscuro);
+        }
+
+        .barra-fondo {
+            width: 100%;
+            height: 10px;
+            background-color: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .barra-progreso {
+            height: 100%;
+            background: linear-gradient(90deg, var(--naranja), var(--naranja-oscuro));
+            border-radius: 999px;
+            transition: width 0.6s ease-in-out;
         }
 
         .tabla-wrapper {
@@ -434,23 +463,34 @@
                         if (acerto) totalAciertos++;
                     });
 
-                    const formatoProporcion = (aciertos, total) => {
+                    // Función auxiliar para generar cada barra con su respectiva estadística
+                    const generarItemBarra = (label, aciertos, total) => {
                         const pct = total > 0 ? ((aciertos / total) * 100).toFixed(1) : "0.0";
-                        return `${aciertos}/${total} (${pct}%)`;
+                        return `
+                            <div class="item-estadistica">
+                                <div class="info-stat">
+                                    <span><strong>${label}:</strong> ${aciertos}/${total}</span>
+                                    <span>(${pct}%)</span>
+                                </div>
+                                <div class="barra-fondo">
+                                    <div class="barra-progreso" style="width: ${pct}%;"></div>
+                                </div>
+                            </div>
+                        `;
                     };
 
                     let htmlResumen = `<h4>Resumen de Aciertos - Simulacro ${numSim}</h4>`;
                     htmlResumen += `<div class="resumen-box">`;
-                    htmlResumen += `<p><strong>CL:</strong> ${formatoProporcion(stats.CL.aciertos, stats.CL.total)}</p>`;
-                    htmlResumen += `<p><strong>RL:</strong> ${formatoProporcion(stats.RL.aciertos, stats.RL.total)}</p>`;
+                    htmlResumen += generarItemBarra("CL", stats.CL.aciertos, stats.CL.total);
+                    htmlResumen += generarItemBarra("RL", stats.RL.aciertos, stats.RL.total);
 
                     Object.keys(stats).forEach(area => {
                         if (area !== 'CL' && area !== 'RL') {
-                            htmlResumen += `<p><strong>${escaparHTML(area)}:</strong> ${formatoProporcion(stats[area].aciertos, stats[area].total)}</p>`;
+                            htmlResumen += generarItemBarra(escaparHTML(area), stats[area].aciertos, stats[area].total);
                         }
                     });
 
-                    htmlResumen += `<p><strong>Total (CL + RL):</strong> ${formatoProporcion(totalAciertos, totalPreguntas)}</p>`;
+                    htmlResumen += generarItemBarra("Total (CL + RL)", totalAciertos, totalPreguntas);
                     htmlResumen += `</div>`;
 
                     let htmlTabla = `<h4>Detalle de Preguntas</h4>`;
