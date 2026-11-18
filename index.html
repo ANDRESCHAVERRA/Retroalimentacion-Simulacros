@@ -78,7 +78,6 @@
                                 <span id="subtituloNota" style="font-size: 0.9rem;"></span>
                             </div>
                             
-                            <!-- Acordeón para carreras -->
                             <div class="accordion" id="accordionCarreras" style="display: none;">
                                 <div class="accordion-item">
                                     <h2 class="accordion-header" id="headingCarreras">
@@ -88,7 +87,6 @@
                                     </h2>
                                     <div id="collapseCarreras" class="accordion-collapse collapse" data-bs-parent="#accordionCarreras">
                                         <div class="accordion-body" id="listaCarreras" style="font-size: 0.9rem;">
-                                            <!-- Aquí se inyectan las carreras -->
                                         </div>
                                     </div>
                                 </div>
@@ -181,7 +179,7 @@
                 const titulo = document.getElementById('tituloNota');
                 const subtitulo = document.getElementById('subtituloNota');
                 const notaTxt = document.getElementById('notaFinal');
-                const accordionCarreras = document.getElementById('accordionCarreras'); // CORREGIDO
+                const accordionCarreras = document.getElementById('accordionCarreras');
 
                 if (datosGlobales.tipo_nota === "Real") {
                     tarjeta.style.backgroundColor = '#198754'; 
@@ -195,7 +193,6 @@
                     subtitulo.innerText = "Basado en el modelo predictivo";
                     notaTxt.innerText = `[${datosGlobales.score_min} - ${datosGlobales.score_max}]`;
                     
-                    // Mostrar carreras si existen
                     if (datosGlobales.carreras && datosGlobales.carreras !== "Ninguna") {
                         if (accordionCarreras) accordionCarreras.style.display = 'block';
                         document.getElementById('listaCarreras').innerText = datosGlobales.carreras;
@@ -234,7 +231,6 @@
                 const isActive = index === 0 ? 'active' : '';
                 const isShow = index === 0 ? 'show active' : '';
 
-                // Crear Tab
                 tabsUl.innerHTML += `
                     <li class="nav-item" role="presentation">
                         <button class="nav-link ${isActive}" id="tab-${sim.num}" data-bs-toggle="tab" data-bs-target="#content-${sim.num}" type="button" role="tab">
@@ -243,7 +239,6 @@
                     </li>
                 `;
 
-                // Crear Contenido
                 tabContent.innerHTML += `
                     <div class="tab-pane fade ${isShow}" id="content-${sim.num}" role="tabpanel">
                         <div class="row mt-3">
@@ -263,7 +258,6 @@
                     </div>
                 `;
 
-                // Llenar la tabla y el gráfico
                 Papa.parse(sim.csv, {
                     header: true, skipEmptyLines: true,
                     complete: function(results) {
@@ -339,7 +333,6 @@
                 dataNotas.push(parseFloat(datosGlobales.nota_final));
             } else if (datosGlobales.tipo_nota === "Predicha") {
                 labels.push("Predicción");
-                // Usamos el promedio del rango para el gráfico
                 const promedio = (parseFloat(datosGlobales.score_min) + parseFloat(datosGlobales.score_max)) / 2;
                 dataNotas.push(promedio);
             }
