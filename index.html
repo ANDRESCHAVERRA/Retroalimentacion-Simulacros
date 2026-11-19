@@ -486,7 +486,7 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
-            <!-- Área superior: Gráfica de evolución + Recuadro Score Final (2025-1) -->
+            <!-- Área superior: Gráfica de evolución + Recuadro Score Final -->
             <div class="area-superior-resultados">
                 <div id="evolucion-container"></div>
                 <div id="score-final-container"></div>
@@ -508,11 +508,6 @@
         let datosGlobales = null;
         let evolucionEstudiante = [];
         let scoreFinalEstudiante = null;
-
-        function esSemestre2025_1(semestre) {
-            const limpio = String(semestre || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-            return limpio === "20251" || limpio.includes("20251");
-        }
 
         window.onload = async () => {
             try {
@@ -635,18 +630,13 @@
 
         function renderizarScoreFinal() {
             const scoreContainer = document.getElementById('score-final-container');
-            const semestre = document.getElementById('selectSemestre').value.trim();
 
-            if (esSemestre2025_1(semestre)) {
-                const textoScore = (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "")
-                    ? escaparHTML(scoreFinalEstudiante)
-                    : "Sin registro";
-
+            if (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "") {
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
                         <h4>Examen Admisión UdeA</h4>
-                        <div class="score-valor">${textoScore}</div>
-                        <div class="score-sub">SCORE_FINAL (${escaparHTML(semestre)})</div>
+                        <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
+                        <div class="score-sub">PUNTAJE REAL</div>
                     </div>
                 `;
             } else {
