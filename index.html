@@ -156,8 +156,18 @@
             margin-bottom: 20px;
         }
 
+        #evolucion-container {
+            flex: 1 1 560px;
+            min-width: 0;
+        }
+
+        #score-final-container:not(:empty) {
+            flex: 0 0 240px;
+            display: flex;
+        }
+
         .evolucion-box {
-            flex: 3 1 520px;
+            width: 100%;
             background-color: var(--naranja-suave);
             border: 1px solid var(--naranja-borde);
             border-left: 5px solid var(--naranja);
@@ -166,7 +176,7 @@
         }
 
         .score-final-box {
-            flex: 1 1 220px;
+            width: 100%;
             background-color: var(--verde-card-bg);
             border: 1px solid var(--verde-card-border);
             border-left: 5px solid var(--verde-texto);
@@ -622,15 +632,11 @@
             const scoreContainer = document.getElementById('score-final-container');
             const semestre = document.getElementById('selectSemestre').value.trim();
 
-            if (semestre === "2025-1") {
-                const textoScore = (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "")
-                    ? escaparHTML(scoreFinalEstudiante)
-                    : "Sin registro";
-
+            if (semestre === "2025-1" && scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "") {
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
                         <h4>Examen Admisión UdeA</h4>
-                        <div class="score-valor">${textoScore}</div>
+                        <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
                         <div class="score-sub">SCORE_FINAL (2025-1)</div>
                     </div>
                 `;
