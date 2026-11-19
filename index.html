@@ -509,6 +509,11 @@
         let evolucionEstudiante = [];
         let scoreFinalEstudiante = null;
 
+        function esSemestre2025_1(semestre) {
+            const limpio = String(semestre || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            return limpio === "20251" || limpio.includes("20251");
+        }
+
         window.onload = async () => {
             try {
                 const res = await fetch(`${API_URL}?action=semestres`);
@@ -632,12 +637,16 @@
             const scoreContainer = document.getElementById('score-final-container');
             const semestre = document.getElementById('selectSemestre').value.trim();
 
-            if (semestre === "2025-1" && scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "") {
+            if (esSemestre2025_1(semestre)) {
+                const textoScore = (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "")
+                    ? escaparHTML(scoreFinalEstudiante)
+                    : "Sin registro";
+
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
                         <h4>Examen Admisión UdeA</h4>
-                        <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
-                        <div class="score-sub">SCORE_FINAL (2025-1)</div>
+                        <div class="score-valor">${textoScore}</div>
+                        <div class="score-sub">SCORE_FINAL (${escaparHTML(semestre)})</div>
                     </div>
                 `;
             } else {
