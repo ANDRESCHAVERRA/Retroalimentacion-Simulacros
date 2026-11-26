@@ -486,7 +486,7 @@
                 <button class="btn-secundario" onclick="volver()">← Volver</button>
             </div>
 
-            <!-- Área superior: Gráfica de evolución + Recuadro Score Final -->
+            <!-- Área superior: Gráfica de evolución + Recuadro Puntaje Real -->
             <div class="area-superior-resultados">
                 <div id="evolucion-container"></div>
                 <div id="score-final-container"></div>
@@ -508,6 +508,7 @@
         let datosGlobales = null;
         let evolucionEstudiante = [];
         let scoreFinalEstudiante = null;
+        let semestreConsultado = "";
 
         window.onload = async () => {
             try {
@@ -602,6 +603,7 @@
                     return;
                 }
 
+                semestreConsultado = semestre;
                 evolucionEstudiante = (datosGlobales.simulacros || []).map(sim => ({
                     num: sim.num,
                     puntaje: calcularAciertosCsv(sim.csv)
@@ -632,11 +634,12 @@
             const scoreContainer = document.getElementById('score-final-container');
 
             if (scoreFinalEstudiante !== null && String(scoreFinalEstudiante).trim() !== "") {
+                const etiquetaSemestre = semestreConsultado ? ` · ${escaparHTML(semestreConsultado)}` : "";
                 scoreContainer.innerHTML = `
                     <div class="score-final-box">
                         <h4>Examen Admisión UdeA</h4>
                         <div class="score-valor">${escaparHTML(scoreFinalEstudiante)}</div>
-                        <div class="score-sub">PUNTAJE REAL</div>
+                        <div class="score-sub">PUNTAJE REAL${etiquetaSemestre}</div>
                     </div>
                 `;
             } else {
@@ -901,6 +904,7 @@
             document.getElementById('tabla-container').innerHTML = "";
             evolucionEstudiante = [];
             scoreFinalEstudiante = null;
+            semestreConsultado = "";
         }
     </script>
 </body>
